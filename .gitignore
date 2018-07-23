@@ -1,3 +1,4 @@
 test_data/
 test.js
 package_parser.js
+node_modules/

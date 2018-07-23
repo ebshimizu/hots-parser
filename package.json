@@ -1,0 +1,37 @@
+{
+  "name": "hots-parser",
+  "version": "0.1.0",
+  "description": "A node-based Heroes of the Storm match parser.",
+  "main": "parser.js",
+  "scripts": {
+    "test": "node_modules/mocha/bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ebshimizu/hots-parser.git"
+  },
+  "keywords": [
+    "nodejs"
+  ],
+  "author": "Evan Shimizu <falindrith@gmail.com>",
+  "contributors": [
+    {
+      "name": "Justin J. Novack",
+      "email": "jnovack@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ebshimizu/hots-parser/issues"
+  },
+  "homepage": "https://github.com/ebshimizu/hots-parser#readme",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0"
+  },
+  "dependencies": {
+    "heroprotocol": "^2.0.0-alpha.3",
+    "pino": "^4.17.5",
+    "xregexp": "^4.2.0"
+  }
+}
