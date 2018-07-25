@@ -4,7 +4,7 @@ const path = require('path');
 const ReplayTypes = require(path.join(__dirname, 'constants.js'));
 const heroprotocol = require('heroprotocol');
 const PARSER_VERSION = 6;
-const battletags = require('./battletags.js');
+const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
 const ReplayDataType = {
@@ -15,7 +15,8 @@ const ReplayDataType = {
   header: "header",
   details: "details",
   init: "initdata",
-  stats: "stats"
+  stats: "stats",
+  lobby: "battlelobby"
 };
 
 // lil bit of duplication here but for fallback reasons, this exists
@@ -26,7 +27,8 @@ const ReplayToProtocolType = {
   attributeevents: heroprotocol.ATTRIBUTES_EVENTS,
   header: heroprotocol.HEADER,
   details: heroprotocol.DETAILS,
-  initdata: heroprotocol.INITDATA
+  initdata: heroprotocol.INITDATA,
+  battlelobby: "replay.server.battlelobby"
 }
 
 const ReplayStatus = {
@@ -52,8 +54,8 @@ const StatusString = {
 }
 
 // it's everything except gameevents which is just a massive amount of data
-const CommonReplayData = [ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init];
-const AllReplayData = [ReplayDataType.game, ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init];
+const CommonReplayData = [ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.lobby];
+const AllReplayData = [ReplayDataType.game, ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.lobby];
 
 function parse(file, requestedData, opts) {
   var replay = {};
@@ -74,7 +76,7 @@ function parse(file, requestedData, opts) {
   }
 
   // battletags
-  replay.tags = battletags.get(file);
+  replay.tags = getBattletags(replay[ReplayDataType.lobby]);
 
   return replay;
 }
@@ -139,6 +141,24 @@ function getHeader(file) {
     log.error({error: err});
     return { err: err };
   }
+}
+
+
+function getBattletags(buffer) {
+  let btagRegExp = XRegExp('(\\p{L}|\\d){3,24}#\\d{4,10}[zØ]?', 'g');
+  let matches = buffer.toString().match(btagRegExp);
+
+  // process
+  let tagMap = [];
+  for (let match of matches) {
+    // split into name + tag
+    let name = match.substr(0, match.indexOf('#'));
+    let tag = match.substr(match.indexOf('#') + 1);
+    tagMap.push({ tag, name, full: match });
+    log.trace('Found BattleTag: ' + match);
+  }
+
+  return tagMap;
 }
 
 // processes a replay file and adds it to the database
@@ -256,19 +276,19 @@ function processReplay(file, opts = {}) {
         }
       }
 
-      // match region should be logged too, since all players should be 
+      // match region should be logged too, since all players should be
       // in the same region, overwrite constantly
       match.region = pdata.m_toon.m_region;
-      
+
       pdoc.team = pdata.m_teamId;  /// the team id doesn't neatly match up with the tracker events, may adjust later
 
       pdoc.ToonHandle = pdata.m_toon.m_region + '-' + pdata.m_toon.m_programId + '-' + pdata.m_toon.m_realm + '-' + pdata.m_toon.m_id;
-      
+
       // DEBUG
       //if (pdata.m_toon.m_realm === 0) {
       //  pdoc.ToonHandle = pdata.m_name + ' [CPU]';
       //}
-      
+
       pdoc.gameStats = {};
       pdoc.talents = {};
       pdoc.takedowns = [];
@@ -301,7 +321,7 @@ function processReplay(file, opts = {}) {
     // maps player id in the Tracker data to the proper player object
     var playerIDMap = {};
     match.loopGameStart = 0; // fairly sure this is always 610 but just in case look for the "GatesOpen" event
-    
+
     // the match length is actually incorrect. need to track core death events for actual match time.
     var cores = {};
 
@@ -351,7 +371,7 @@ function processReplay(file, opts = {}) {
 
     log.debug('Gathering player cosmetic info...');
 
-    let lobbyState = data.initdata.m_syncLobbyState.m_lobbyState.m_slots; 
+    let lobbyState = data.initdata.m_syncLobbyState.m_lobbyState.m_slots;
     var playerLobbyID = {};
     for (let i = 0; i < lobbyState.length; i++) {
       let p = lobbyState[i];
@@ -367,7 +387,7 @@ function processReplay(file, opts = {}) {
       players[id].announcer = p.m_announcerPack;
       players[id].mount = p.m_mount;
       players[id].silenced = p.m_hasSilencePenalty;
-      
+
       if ('m_hasVoiceSilencePenalty' in p)
         players[id].voiceSilenced = p.m_hasVoiceSilencePenalty;
 
@@ -552,7 +572,7 @@ function processReplay(file, opts = {}) {
       match.objective[0] = {count: 0, success: 0, events: []};
       match.objective[1] = {count: 0, success: 0, events: []};
       match.objective.warheads = [];
-    
+
     }
     else if (match.map === ReplayTypes.MapType.AlteracPass) {
       match.objective[0] = { events: [] };
@@ -692,7 +712,7 @@ function processReplay(file, opts = {}) {
               else {
                 tdo = { player: playerIDMap[entry.m_value], hero: players[playerIDMap[entry.m_value]].hero };
               }
-              
+
               killers.push(playerIDMap[entry.m_value]);
               tData.killers.push(tdo);
             }
@@ -779,7 +799,7 @@ function processReplay(file, opts = {}) {
         else if (event.m_eventName === ReplayTypes.StatEventType.TributeCollected) {
           let objEvent = { team: event.m_fixedData[0].m_value / 4096 - 1, loop: event._gameloop };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
-          
+
           match.objective[objEvent.team].events.push(objEvent);
           match.objective[objEvent.team].count += 1;
 
@@ -812,7 +832,7 @@ function processReplay(file, opts = {}) {
           objEvent.team1Score = (objEvent.team === 1) ? event.m_intData[2].m_value : event.m_intData[3].m_value;
 
           match.objective.shrines.push(objEvent);
-          
+
           log.trace('[TRACKER] Shrine won by team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.PunisherKilled) {
@@ -917,7 +937,7 @@ function processReplay(file, opts = {}) {
           if (match.map === ReplayTypes.MapType.Crypts) {
             xpVal = ReplayTypes.TombMinionXP[type][elapsedGameMinutes];
           }
-          
+
           if (event.m_upkeepPlayerId === 11)
             possibleMinionXP[ReplayTypes.TeamType.Blue] += xpVal;
           else if (event.m_upkeepPlayerId === 12)
@@ -1278,7 +1298,7 @@ function processReplay(file, opts = {}) {
             match.objective.shrines.sun.push(objEvent);
           }
           else if (dragon && dragon.tag === tag && dragon.rtag === rtag) {
-            // player got it 
+            // player got it
             if (event.m_controlPlayerId > 0 && event.m_controlPlayerId !== 11 && event.m_controlPlayerId !== 12) {
               dragon.player = playerIDMap[event.m_controlPlayerId];
             }
@@ -1577,7 +1597,7 @@ function processReplay(file, opts = {}) {
     log.debug('[STATS] Collecting Team Stats...');
 
     collectTeamStats(match, players);
-    
+
     log.debug('[STATS] Team stat collection complete');
 
     log.debug('[STATS] Setting Match Flags...');
@@ -1613,7 +1633,7 @@ function processScoreArray(data, match, players, playerIDMap) {
 
   // ok so custom games have empty arrays where observers sit
   // also the data isn't continuous, i believe the order is the same (as in data
-  // for internal game user 1 comes before game user 2) and the empty arrays just need to 
+  // for internal game user 1 comes before game user 2) and the empty arrays just need to
   // be removed
 
   // iterate through each object...
@@ -1846,7 +1866,7 @@ function collectTeamStats(match, players) {
     let structures = {};
     for (let s in match.structures) {
       let structure = match.structures[s];
-      
+
       if (!(structure.name in structures)) {
         structures[structure.name] = {
           lost: 0,
@@ -2000,7 +2020,7 @@ function getFirstObjectiveTeam(match) {
 
       if (blueCt === redCt)
         return null;
-      
+
       return blueCt > redCt ? ReplayTypes.TeamType.Blue : ReplayTypes.TeamType.Red;
     }
     else if (match.map === ReplayTypes.MapType.TowersOfDoom) {
@@ -2017,7 +2037,7 @@ function getFirstObjectiveTeam(match) {
       for (let i = 0; i < 3; i++) {
         if (i >= altars.length)
           break;
-        
+
         if (altars[i].team === ReplayTypes.TeamType.Blue)
           blueCt += 1;
         else if (altars[i].team === ReplayTypes.TeamType.Red)
@@ -2026,7 +2046,7 @@ function getFirstObjectiveTeam(match) {
 
       if (blueCt === redCt)
         return null;
-    
+
       return blueCt > redCt ? ReplayTypes.TeamType.Blue : ReplayTypes.TeamType.Red;
     }
     else if (match.map === ReplayTypes.MapType.CursedHollow) {
@@ -2046,11 +2066,11 @@ function getFirstObjectiveTeam(match) {
 
         if (blueCt >= 3)
           return ReplayTypes.TeamType.Blue;
-        
+
         if (redCt >= 3)
           return ReplayTypes.TeamType.Red;
       }
-      
+
       // if no one got a curse, return null
       return null;
     }
@@ -2080,7 +2100,7 @@ function getFirstObjectiveTeam(match) {
 
       if (blueCt === redCt)
         return null;
-  
+
       return blueCt > redCt ? ReplayTypes.TeamType.Blue : ReplayTypes.TeamType.Red;
     }
     else if (match.map === ReplayTypes.MapType.BattlefieldOfEternity) {
@@ -2164,6 +2184,7 @@ exports.processReplay = processReplay;
 exports.ReplayStatus = ReplayStatus;
 exports.StatusString = StatusString;
 exports.getHeader = getHeader;
+exports.getBattletags = getBattletags;
 exports.getFirstObjectiveTeam = getFirstObjectiveTeam;
 exports.winFileTimeToDate = winFileTimeToDate;
 exports.getFirstFortTeam = getFirstFortTeam;
