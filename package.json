@@ -30,7 +30,6 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
-    "heroes-talents": "^1.0.0",
     "heroprotocol": "^2.0.0-alpha.3",
     "pino": "^4.17.5",
     "xregexp": "^4.2.0"

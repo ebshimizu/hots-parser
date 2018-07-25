@@ -142,7 +142,7 @@ function getHeader(file) {
 }
 
 // processes a replay file and adds it to the database
-// the parser now requires a heroes talents instance to function.
+// the parser no longer requires a heroes talents instance to function.
 function processReplay(file, opts = {}) {
   // options
   if (!('getBMData' in opts))
