@@ -232,9 +232,9 @@ function processReplay(file, opts = {}) {
     }
     // match.map = details.m_title;
 
+    match.date = winFileTimeToDate(details.m_timeUTC);
     log.debug('Processing ' + ReplayTypes.GameModeStrings[match.mode]  + ' game on ' + match.map + ' at ' + match.date);
 
-    match.date = winFileTimeToDate(details.m_timeUTC);
     match.rawDate = details.m_timeUTC;
 
     // check for duplicate matches somewhere else, this function executes without async calls
