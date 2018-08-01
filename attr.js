@@ -74,6 +74,7 @@ exports.heroAttribute = {
   "Demo": "Valla",
   "Vari": "Varian",
   "Necr": "Xul",
+  "WHIT": "Whitemane",
   "YREL": "Yrel",
   "Zaga": "Zagara",
   "Zary": "Zarya",
