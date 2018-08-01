@@ -32,7 +32,7 @@ Main replay processing function.
 
 `options` - Optional object that can contain the following:
 
-- `getDMData` : bool, default `true`. Set to false to skip parsing all
+- `getBMData` : bool, default `true`. Set to false to skip parsing all
 taunts, b-step, spray, and dance events. These options use the `gamedata` archive, which adds
 significant processing time as the parser loads and inspects all game events.
 - `useAttributeName` : bool, default `false`. Set to true to leave hero names unresolved
