@@ -85,7 +85,7 @@ function parse(file, requestedData, opts) {
 // for checking duplicates
 function getHeader(file) {
   try {
-    let data = parse(file, [ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.tracker]);
+    let data = parse(file, [ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.tracker, ReplayDataType.lobby]);
 
     var details = data.details;
     var match = {};
