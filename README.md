@@ -9,7 +9,7 @@ clone it and install the required packages manually:
 
 ```
 git clone
-npm install heroprotocol xregexp
+npm install
 ```
 
 Eventually this package will be in npm, but it isn't ready just quite yet.

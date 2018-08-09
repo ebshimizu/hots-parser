@@ -1,9 +1,10 @@
+const log = require('./pino.js');
 const fs = require('fs');
 const path = require('path');
 const ReplayTypes = require(path.join(__dirname, 'constants.js'));
 const heroprotocol = require('heroprotocol');
 const PARSER_VERSION = 6;
-const battletags = require('./battletags.js');
+const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
 const ReplayDataType = {
@@ -14,7 +15,8 @@ const ReplayDataType = {
   header: "header",
   details: "details",
   init: "initdata",
-  stats: "stats"
+  stats: "stats",
+  lobby: "battlelobby"
 };
 
 // lil bit of duplication here but for fallback reasons, this exists
@@ -25,7 +27,8 @@ const ReplayToProtocolType = {
   attributeevents: heroprotocol.ATTRIBUTES_EVENTS,
   header: heroprotocol.HEADER,
   details: heroprotocol.DETAILS,
-  initdata: heroprotocol.INITDATA
+  initdata: heroprotocol.INITDATA,
+  battlelobby: "replay.server.battlelobby"
 }
 
 const ReplayStatus = {
@@ -51,15 +54,15 @@ const StatusString = {
 }
 
 // it's everything except gameevents which is just a massive amount of data
-const CommonReplayData = [ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init];
-const AllReplayData = [ReplayDataType.game, ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init];
+const CommonReplayData = [ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.lobby];
+const AllReplayData = [ReplayDataType.game, ReplayDataType.message, ReplayDataType.tracker, ReplayDataType.attribute, ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.lobby];
 
 function parse(file, requestedData, opts) {
   var replay = {};
 
   // execute sync
   for (var i in requestedData) {
-    console.log("Retrieving " + requestedData[i]);
+    log.debug('Retrieving ' + requestedData[i]);
     replay[requestedData[i]] = heroprotocol.get(ReplayToProtocolType[requestedData[i]], file);
   }
 
@@ -67,13 +70,13 @@ function parse(file, requestedData, opts) {
     if ('saveToFile' in opts) {
       fs.writeFile(opts.saveToFile, JSON.stringify(replay, null, 2), function (err) {
         if (err) throw err;
-        console.log('Wrote replay data to ' + opts.saveToFile);
+        log.info('Wrote replay data to ' + opts.saveToFile);
       });
     }
   }
 
   // battletags
-  replay.tags = battletags.get(file);
+  replay.tags = getBattletags(replay[ReplayDataType.lobby]);
 
   return replay;
 }
@@ -112,7 +115,7 @@ function getHeader(file) {
             break;
           }
           else {
-            console.log('Unrecognized internal map name: ' + internalMap);
+            log.error('Unrecognized internal map name: ' + internalMap);
             return { err: 'map' };
           }
         }
@@ -135,13 +138,31 @@ function getHeader(file) {
     return match;
   }
   catch (err) {
-    console.log(err);
+    log.error({error: err});
     return { err: err };
   }
 }
 
+
+function getBattletags(buffer) {
+  let btagRegExp = XRegExp('(\\p{L}|\\d){3,24}#\\d{4,10}[zØ]?', 'g');
+  let matches = buffer.toString().match(btagRegExp);
+
+  // process
+  let tagMap = [];
+  for (let match of matches) {
+    // split into name + tag
+    let name = match.substr(0, match.indexOf('#'));
+    let tag = match.substr(match.indexOf('#') + 1);
+    tagMap.push({ tag, name, full: match });
+    log.trace('Found BattleTag: ' + match);
+  }
+
+  return tagMap;
+}
+
 // processes a replay file and adds it to the database
-// the parser now requires a heroes talents instance to function.
+// the parser no longer requires a heroes talents instance to function.
 function processReplay(file, opts = {}) {
   // options
   if (!('getBMData' in opts))
@@ -151,7 +172,7 @@ function processReplay(file, opts = {}) {
     opts.useAttributeName = false;
 
   try {
-    console.log("Parsing " + file);
+    log.info('Parsing ' + file);
 
     // parse it
     var data;
@@ -184,7 +205,7 @@ function processReplay(file, opts = {}) {
 
     // check for supported mode
     if (match.mode === ReplayTypes.GameMode.Brawl) {
-      console.log("Brawls are not supported!");
+      log.warn('Brawls are not supported!');
       return { status: ReplayStatus.Unsupported };
     }
 
@@ -203,7 +224,7 @@ function processReplay(file, opts = {}) {
             break;
           }
           else {
-            console.log('Unrecognized internal map name: ' + internalMap);
+            log.warn('Unrecognized internal map name: ' + internalMap);
             return { status: ReplayStats.UnsupportedMap };
           }
         }
@@ -211,9 +232,9 @@ function processReplay(file, opts = {}) {
     }
     // match.map = details.m_title;
 
-    console.log("Processing " + ReplayTypes.GameModeStrings[match.mode]  + " game on " + match.map + " at " + match.date);
-
     match.date = winFileTimeToDate(details.m_timeUTC);
+    log.debug('Processing ' + ReplayTypes.GameModeStrings[match.mode]  + ' game on ' + match.map + ' at ' + match.date);
+
     match.rawDate = details.m_timeUTC;
 
     // check for duplicate matches somewhere else, this function executes without async calls
@@ -231,7 +252,7 @@ function processReplay(file, opts = {}) {
     match.levelTimes = {0: {}, 1: {}};
     var playerDetails = details.m_playerList;
 
-    console.log("Gathering Preliminary Player Data...");
+    log.debug('Gathering Preliminary Player Data...');
     for (var i = 0; i < playerDetails.length; i++) {
       var pdata = playerDetails[i];
       var pdoc = {};
@@ -255,19 +276,19 @@ function processReplay(file, opts = {}) {
         }
       }
 
-      // match region should be logged too, since all players should be 
+      // match region should be logged too, since all players should be
       // in the same region, overwrite constantly
       match.region = pdata.m_toon.m_region;
-      
+
       pdoc.team = pdata.m_teamId;  /// the team id doesn't neatly match up with the tracker events, may adjust later
 
       pdoc.ToonHandle = pdata.m_toon.m_region + '-' + pdata.m_toon.m_programId + '-' + pdata.m_toon.m_realm + '-' + pdata.m_toon.m_id;
-      
+
       // DEBUG
       //if (pdata.m_toon.m_realm === 0) {
       //  pdoc.ToonHandle = pdata.m_name + ' [CPU]';
       //}
-      
+
       pdoc.gameStats = {};
       pdoc.talents = {};
       pdoc.takedowns = [];
@@ -290,17 +311,17 @@ function processReplay(file, opts = {}) {
       players[pdoc.ToonHandle] = pdoc;
       match.playerIDs.push(pdoc.ToonHandle);
 
-      console.log("Found player " + pdoc.ToonHandle + " (" + pdoc.name+ ")");
+      log.trace('Found player ' + pdoc.ToonHandle + ' (' + pdoc.name+ ')');
     }
 
-    console.log("Preliminary Player Processing Complete");
-    console.log("Matching Tracker Player ID to handles...");
+    log.debug('Preliminary Player Processing Complete');
+    log.debug('Matching Tracker Player ID to handles...');
 
     // construct identfier map for player handle to internal player object id
     // maps player id in the Tracker data to the proper player object
     var playerIDMap = {};
     match.loopGameStart = 0; // fairly sure this is always 610 but just in case look for the "GatesOpen" event
-    
+
     // the match length is actually incorrect. need to track core death events for actual match time.
     var cores = {};
 
@@ -311,7 +332,7 @@ function processReplay(file, opts = {}) {
       if (event._eventid === ReplayTypes.TrackerEvent.Stat) {
         if (event.m_eventName === ReplayTypes.StatEventType.PlayerInit) {
           if (event.m_stringData[0].m_value === "Computer") {
-            console.log("Games with computer players are not supported");
+            log.warn('Games with computer players are not supported');
             // DEBUG
             //event.m_stringData.push({ m_value: `Player ${event.m_intData[0].m_value} [CPU]`});
             return { status: ReplayStatus.ComputerPlayerFound };
@@ -325,7 +346,7 @@ function processReplay(file, opts = {}) {
           // right hero names should be tracked here...
           match.heroes.push(players[event.m_stringData[1].m_value].hero);
 
-          console.log("Player " + event.m_stringData[1].m_value + " has tracker ID " + event.m_intData[0].m_value);
+          log.trace('Player ' + event.m_stringData[1].m_value + ' has tracker ID ' + event.m_intData[0].m_value);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.GatesOpen) {
           match.loopGameStart = event._gameloop;
@@ -339,18 +360,18 @@ function processReplay(file, opts = {}) {
           let tag = event.m_unitTagIndex + '-' + event.m_unitTagRecycle;
           cores[tag] = event;
 
-          console.log('Team ' + (event.m_upkeepPlayerId - 11) + ' core ' + tag + ' found');
+          log.trace('Team ' + (event.m_upkeepPlayerId - 11) + ' core ' + tag + ' found');
         }
       }
     }
 
     match.length = loopsToSeconds(match.loopLength - match.loopGameStart);
 
-    console.log("Player ID Mapping Complete");
+    log.debug('Player ID Mapping Complete');
 
-    console.log("Gathering player cosmetic info...");
+    log.debug('Gathering player cosmetic info...');
 
-    let lobbyState = data.initdata.m_syncLobbyState.m_lobbyState.m_slots; 
+    let lobbyState = data.initdata.m_syncLobbyState.m_lobbyState.m_slots;
     var playerLobbyID = {};
     for (let i = 0; i < lobbyState.length; i++) {
       let p = lobbyState[i];
@@ -366,7 +387,7 @@ function processReplay(file, opts = {}) {
       players[id].announcer = p.m_announcerPack;
       players[id].mount = p.m_mount;
       players[id].silenced = p.m_hasSilencePenalty;
-      
+
       if ('m_hasVoiceSilencePenalty' in p)
         players[id].voiceSilenced = p.m_hasVoiceSilencePenalty;
 
@@ -385,7 +406,7 @@ function processReplay(file, opts = {}) {
     // fallback plan
     // the initdata.m_lobbyState.m_slots should have it instead
     if (null in playerWorkingSlotID) {
-      console.log('playerWorkingSlotIDs are null. Proceeding to fallback...');
+      log.warn('playerWorkingSlotIDs are null. Proceeding to fallback...');
       playerWorkingSlotID = {};
       for (let slot of data.initdata.m_syncLobbyState.m_lobbyState.m_slots) {
         let toon = playerLobbyID[slot.m_userId];
@@ -395,12 +416,12 @@ function processReplay(file, opts = {}) {
       }
     }
 
-    console.log("Cosmetic use data collection complete");
+    log.debug('Cosmetic use data collection complete');
 
     // draft bans check
     if (match.mode === ReplayTypes.GameMode.UnrankedDraft || match.mode === ReplayTypes.GameMode.HeroLeague ||
         match.mode === ReplayTypes.GameMode.TeamLeague || match.mode === ReplayTypes.GameMode.Custom) {
-      console.log("Gathering draft data...");
+      log.debug('Gathering draft data...');
       match.bans = {0: [], 1: []};
       match.picks = {0: [], 1: []};
 
@@ -468,12 +489,12 @@ function processReplay(file, opts = {}) {
             match.picks[player.team].push(player.hero);
           }
           else {
-            console.log("[PARSER WARNING] Match has invalid pick data, recovering as much data as possible.");
+            log.warn('Match has invalid draft data, recovering as much data as possible...');
           }
         }
       }
 
-      console.log("Draft data complete");
+      log.debug('Draft data complete');
     }
 
     // the tracker events have most of the useful data
@@ -551,7 +572,7 @@ function processReplay(file, opts = {}) {
       match.objective[0] = {count: 0, success: 0, events: []};
       match.objective[1] = {count: 0, success: 0, events: []};
       match.objective.warheads = [];
-    
+
     }
     else if (match.map === ReplayTypes.MapType.AlteracPass) {
       match.objective[0] = { events: [] };
@@ -572,12 +593,12 @@ function processReplay(file, opts = {}) {
       // can't wait till i have to detect which version of the map this is
     }
     else if (match.map === undefined) {
-      console.log('Map name not found. Replay too old?');
+      log.error('Map name not found. Replay too old?');
       return { status: ReplayStatus.TooOld };
     }
     else {
       // unsupported map
-      console.log('Map ' + match.map + ' is not supported');
+      log.error('Map ' + match.map + ' is not supported');
       return { status: ReplayStatus.UnsupportedMap };
     }
 
@@ -587,7 +608,7 @@ function processReplay(file, opts = {}) {
     // player 11 = blue (0) team ai?, player 12 = red (0) team ai?
     var possibleMinionXP = { "0" : 0, "1" : 0 };
 
-    console.log("[TRACKER] Starting Event Analysis...");
+    log.debug('[TRACKER] Starting Event Analysis...');
 
     for (let i = 0; i < tracker.length; i++) {
       let event = tracker[i];
@@ -602,7 +623,7 @@ function processReplay(file, opts = {}) {
           let trackerPlayerID = event.m_intData[0].m_value;
           let playerID = playerIDMap[trackerPlayerID];
 
-          console.log("[TRACKER] Processing Talent Choices for " + playerID);
+          log.trace('[TRACKER] Processing Talent Choices for ' + playerID);
 
           // this actually contains more than talent choices
           if (event.m_stringData[1].m_value === "Win") {
@@ -631,7 +652,7 @@ function processReplay(file, opts = {}) {
           xpb.breakdown = {};
           xpb.theoreticalMinionXP = possibleMinionXP[xpb.team];
 
-          console.log("[TRACKER] Processing XP Breakdown for team " + xpb.team + " at loop " + xpb.loop);
+          log.trace('[TRACKER] Processing XP Breakdown for team ' + xpb.team + ' at loop ' + xpb.loop);
 
           for (let j in event.m_fixedData) {
             xpb.breakdown[event.m_fixedData[j].m_key] = event.m_fixedData[j].m_value / 4096;
@@ -648,7 +669,7 @@ function processReplay(file, opts = {}) {
           xpb.theoreticalMinionXP = possibleMinionXP[xpb.team];
           xpb.breakdown = {};
 
-          console.log("[TRACKER] Caching Final XP Breakdown for team " + xpb.team + " at loop " + xpb.loop);
+          log.trace('[TRACKER] Caching Final XP Breakdown for team ' + xpb.team + ' at loop ' + xpb.loop);
 
           for (let j in event.m_fixedData) {
             xpb.breakdown[event.m_fixedData[j].m_key] = event.m_fixedData[j].m_value / 4096;
@@ -691,7 +712,7 @@ function processReplay(file, opts = {}) {
               else {
                 tdo = { player: playerIDMap[entry.m_value], hero: players[playerIDMap[entry.m_value]].hero };
               }
-              
+
               killers.push(playerIDMap[entry.m_value]);
               tData.killers.push(tdo);
             }
@@ -711,7 +732,7 @@ function processReplay(file, opts = {}) {
             players[killers[j]].takedowns.push(tData);
           }
 
-          console.log('[TRACKER] Processed Player ' + victim + ' death at ' + tData.loop);
+          log.trace('[TRACKER] Processed Player ' + victim + ' death at ' + tData.loop);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.LootSprayUsed) {
           let spray = {};
@@ -726,7 +747,7 @@ function processReplay(file, opts = {}) {
 
           players[id].sprays.push(spray);
 
-          console.log('[TRACKER] Spray from player ' + id + ' found');
+          log.trace('[TRACKER] Spray from player ' + id + ' found');
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.LootVoiceLineUsed) {
           let line = {};
@@ -741,7 +762,7 @@ function processReplay(file, opts = {}) {
 
           players[id].voiceLines.push(line);
 
-          console.log('[TRACKER] Voice Line from player ' + id + ' found');
+          log.trace('[TRACKER] Voice Line from player ' + id + ' found');
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.SkyTempleShotsFired) {
           let objEvent = { team: event.m_intData[2].m_value - 1, loop: event._gameloop, damage: event.m_fixedData[0].m_value / 4096 };
@@ -753,7 +774,7 @@ function processReplay(file, opts = {}) {
             match.objective[objEvent.team].count += 1;
           }
 
-          console.log("[TRACKER] Sky Temple: Shot fired for team " + objEvent.team);
+          log.trace('[TRACKER] Sky Temple: Shot fired for team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.AltarCaptured) {
           let objEvent = { team: event.m_intData[0].m_value - 1, loop: event._gameloop, owned: event.m_intData[1].m_value };
@@ -764,25 +785,25 @@ function processReplay(file, opts = {}) {
           match.objective[objEvent.team].damage += objEvent.damage;
           match.objective[objEvent.team].count += 1;
 
-          console.log("[TRACKER] Towers of Doom: Altar Capture for team " + objEvent.team);
+          log.trace('[TRACKER] Towers of Doom: Altar Capture for team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.ImmortalDefeated) {
           let objEvent = { winner: event.m_intData[1].m_value - 1, loop: event._gameloop, duration: event.m_intData[2].m_value };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
           objEvent.power = event.m_fixedData[0].m_value / 4096;
 
-          console.log("[TRACKER] Immortal Fight Completed");
+          log.trace('[TRACKER] Immortal Fight Completed');
 
           match.objective.results.push(objEvent);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.TributeCollected) {
           let objEvent = { team: event.m_fixedData[0].m_value / 4096 - 1, loop: event._gameloop };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
-          
+
           match.objective[objEvent.team].events.push(objEvent);
           match.objective[objEvent.team].count += 1;
 
-          console.log("[TRACKER] Tribute collected by team " + objEvent.team);
+          log.trace('[TRACKER] Tribute collected by team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.DragonKnightActivated) {
           let objEvent = {team: event.m_fixedData[0].m_value / 4096 - 1, loop: event._gameloop};
@@ -792,7 +813,7 @@ function processReplay(file, opts = {}) {
           match.objective[objEvent.team].count += 1;
           dragon.team = objEvent.team;
 
-          console.log("[TRACKER] Dragon Knight Activated by team " + objEvent.team);
+          log.trace('[TRACKER] Dragon Knight Activated by team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.GardenTerrorActivated) {
           let objEvent = {team: event.m_fixedData[1].m_value / 4096 - 1, loop: event._gameloop};
@@ -802,7 +823,7 @@ function processReplay(file, opts = {}) {
           match.objective[objEvent.team].count += 1;
           currentTerror[objEvent.team].active = true;
 
-          console.log("[TRACKER] Garden Terror Activated by team " + objEvent.team);
+          log.trace('[TRACKER] Garden Terror Activated by team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.ShrineCaptured) {
           let objEvent = {team: event.m_intData[1].m_value - 1, loop: event._gameloop};
@@ -811,8 +832,8 @@ function processReplay(file, opts = {}) {
           objEvent.team1Score = (objEvent.team === 1) ? event.m_intData[2].m_value : event.m_intData[3].m_value;
 
           match.objective.shrines.push(objEvent);
-          
-          console.log('[TRACKER] Shrine won by team ' + objEvent.team);
+
+          log.trace('[TRACKER] Shrine won by team ' + objEvent.team);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.PunisherKilled) {
           let objEvent = { team: event.m_intData[1].m_value - 1, loop: event._gameloop, type: event.m_stringData[0].m_value };
@@ -824,7 +845,7 @@ function processReplay(file, opts = {}) {
           match.objective[objEvent.team].events.push(objEvent);
           match.objective[objEvent.team].count += 1;
 
-          console.log('[TRACKER] Punisher defeated');
+          log.trace('[TRACKER] Punisher defeated');
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.SpidersSpawned) {
           let objEvent = { team: event.m_fixedData[0].m_value / 4096 - 1, score: event.m_intData[1].m_value, loop: event._gameloop };
@@ -837,7 +858,7 @@ function processReplay(file, opts = {}) {
           currentSpiders.eventIdx = match.objective[objEvent.team].count - 1;
           currentSpiders.unitIdx = 0;
 
-          console.log('[TRACKER] Webweaver phase for team ' + objEvent.team + ' started');
+          log.trace('[TRACKER] Webweaver phase for team ' + objEvent.team + ' started');
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.CampCapture) {
           let cap = { loop: event._gameloop, type: event.m_stringData[0].m_value, team: event.m_fixedData[0].m_value / 4096 - 1};
@@ -853,7 +874,7 @@ function processReplay(file, opts = {}) {
             }
           }
 
-          console.log('[TRACKER] Mercenary camp captured by team ' + cap.team + ' of type ' + cap.type);
+          log.trace('[TRACKER] Mercenary camp captured by team ' + cap.team + ' of type ' + cap.type);
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.SixTowersStart) {
           let six = { loop: event._gameloop, team: event.m_intData[0].m_value - 1, kind: 'capture' };
@@ -916,7 +937,7 @@ function processReplay(file, opts = {}) {
           if (match.map === ReplayTypes.MapType.Crypts) {
             xpVal = ReplayTypes.TombMinionXP[type][elapsedGameMinutes];
           }
-          
+
           if (event.m_upkeepPlayerId === 11)
             possibleMinionXP[ReplayTypes.TeamType.Blue] += xpVal;
           else if (event.m_upkeepPlayerId === 12)
@@ -974,7 +995,7 @@ function processReplay(file, opts = {}) {
           match.objective[currentProtector.team].count += 1;
           currentProtector.eventIdx = match.objective[currentProtector.team].count - 1;
 
-          console.log('[TRACKER] Triglav Protector spawned by team ' + currentProtector.team);
+          log.trace('[TRACKER] Triglav Protector spawned by team ' + currentProtector.team);
         }
         else if (type === ReplayTypes.UnitType.Nuke) {
           // create an id for the unit
@@ -1057,7 +1078,7 @@ function processReplay(file, opts = {}) {
           unit.time = loopsToSeconds(unit.loop - match.loopGameStart);
           match.mercs.units[id] = unit;
 
-          console.log('[MERCS] id:' + id + ' ' + unit.type + ' spawned for team ' + unit.team);
+          log.trace('[MERCS] id:' + id + ' ' + unit.type + ' spawned for team ' + unit.team);
         }
         else if (type in ReplayTypes.StructureStrings) {
           let id = event.m_unitTagIndex + '-' + event.m_unitTagRecycle;
@@ -1082,7 +1103,7 @@ function processReplay(file, opts = {}) {
         if (uid in match.mercs.units) {
           match.mercs.units[uid].duration = loopsToSeconds(event._gameloop - match.mercs.units[uid].loop);
 
-          console.log('[MERCS] Mercenary id ' + uid + ' died');
+          log.trace('[MERCS] Mercenary id ' + uid + ' died');
         }
 
         // structures, all maps
@@ -1090,7 +1111,7 @@ function processReplay(file, opts = {}) {
           match.structures[uid].destroyedLoop = event._gameloop;
           match.structures[uid].destroyed = loopsToSeconds(event._gameloop - match.loopGameStart);
 
-          console.log('[STRUCTURES] Team ' + match.structures[uid].team + ' ' + match.structures[uid].type + ' destroyed');
+          log.trace('[STRUCTURES] Team ' + match.structures[uid].team + ' ' + match.structures[uid].type + ' destroyed');
         }
 
         // Haunted Mines - check for matching golem death
@@ -1105,7 +1126,7 @@ function processReplay(file, opts = {}) {
               objEvent.team = golem.team;
               golems[g] = null;
 
-              console.log('[TRACKER] Team ' + objEvent.team + ' golem lasted for ' + objEvent.duration + ' seconds');
+              log.trace('[TRACKER] Team ' + objEvent.team + ' golem lasted for ' + objEvent.duration + ' seconds');
 
               match.objective[objEvent.team].push(objEvent);
             }
@@ -1125,7 +1146,7 @@ function processReplay(file, opts = {}) {
 
               currentTerror[t].active = false;
 
-              console.log('[TRACKER] Team ' + team + ' terror lasted for ' + loopsToSeconds(duration) + ' seconds');
+              log.trace('[TRACKER] Team ' + team + ' terror lasted for ' + loopsToSeconds(duration) + ' seconds');
             }
           }
         }
@@ -1158,7 +1179,7 @@ function processReplay(file, opts = {}) {
                   currentSpiders.active = false;
                   currentSpiders.units = {};
 
-                  console.log("[TRACKER] Webweaver phase ended");
+                  log.trace('[TRACKER] Webweaver phase ended');
                   break;
                 }
               }
@@ -1173,7 +1194,7 @@ function processReplay(file, opts = {}) {
             match.objective[currentProtector.team].events[currentProtector.eventIdx].duration = duration;
             currentProtector = {active: false};
 
-            console.log('[TRACKER] Triglav Protector destroyed');
+            log.trace('[TRACKER] Triglav Protector destroyed');
           }
         }
         else if (match.map === ReplayTypes.MapType['Warhead Junction']) {
@@ -1182,7 +1203,7 @@ function processReplay(file, opts = {}) {
           if (id in nukes) {
             nukes[id].success = event._gameloop - nukes[id].loop > 16 * 2;
 
-            console.log('[TRACKER] Nuclear Launch Detected');
+            log.trace('[TRACKER] Nuclear Launch Detected');
           }
         }
         else if (match.map === ReplayTypes.MapType.BraxisHoldout) {
@@ -1277,7 +1298,7 @@ function processReplay(file, opts = {}) {
             match.objective.shrines.sun.push(objEvent);
           }
           else if (dragon && dragon.tag === tag && dragon.rtag === rtag) {
-            // player got it 
+            // player got it
             if (event.m_controlPlayerId > 0 && event.m_controlPlayerId !== 11 && event.m_controlPlayerId !== 12) {
               dragon.player = playerIDMap[event.m_controlPlayerId];
             }
@@ -1323,7 +1344,7 @@ function processReplay(file, opts = {}) {
           objEvent.team = golem.team;
           golems[g] = null;
 
-          console.log('[TRACKER] Team ' + objEvent.team + ' golem lasted for ' + objEvent.duration + ' seconds');
+          log.trace('[TRACKER] Team ' + objEvent.team + ' golem lasted for ' + objEvent.duration + ' seconds');
 
           match.objective[objEvent.team].push(objEvent);
         }
@@ -1343,7 +1364,7 @@ function processReplay(file, opts = {}) {
 
           currentTerror[t].active = false;
 
-          console.log('[TRACKER] Team ' + team + ' terror lasted for ' + loopsToSeconds(duration) + ' seconds');
+          log.trace('[TRACKER] Team ' + team + ' terror lasted for ' + loopsToSeconds(duration) + ' seconds');
         }
       }
     }
@@ -1403,12 +1424,12 @@ function processReplay(file, opts = {}) {
       }
     }
 
-    console.log("[TRACKER] Adding final XP breakdown");
+    log.debug('[TRACKER] Adding final XP breakdown');
 
     match.XPBreakdown.push(team0XPEnd);
     match.XPBreakdown.push(team1XPEnd);
 
-    console.log("[TRACKER] Event Analysis Complete");
+    log.debug('[TRACKER] Event Analysis Complete');
 
     // get a few more bits of summary data from the players...
     match.teams = {0: { ids: [], names: [], heroes: [] }, 1: { ids: [], names: [], heroes: [] }};
@@ -1470,7 +1491,7 @@ function processReplay(file, opts = {}) {
 
     match.winningPlayers = match.teams[match.winner].ids;
 
-    console.log("[MESSAGES] Message Processing Start...");
+    log.debug('[MESSAGES] Message Processing Start...');
 
     var messages = data.messageevents;
     match.messages = [];
@@ -1507,10 +1528,10 @@ function processReplay(file, opts = {}) {
       match.messages.push(msg);
     }
 
-    console.log("[MESSAGES] Message Processing Complete");
+    log.debug('[MESSAGES] Message Processing Complete');
 
     if ('gameevents' in data) {
-      console.log("[GAME] Taunt Detection Running...");
+      log.debug('[GAME] Taunt Detection Running...');
 
       // this is probably the worst use of cpu cycles i can think of but i'm gonna do it
       var gameLog = data.gameevents;
@@ -1571,15 +1592,15 @@ function processReplay(file, opts = {}) {
       processTauntData(players, match.takedowns, playerBSeq);
     }
 
-    console.log("[GAME] Taunt Detection Complete");
+    log.debug('[GAME] Taunt Detection Complete');
 
-    console.log("[STATS] Collecting Team Stats...");
+    log.debug('[STATS] Collecting Team Stats...');
 
     collectTeamStats(match, players);
-    
-    console.log("[STATS] Team stat collection complete");
 
-    console.log("[STATS] Setting Match Flags...");
+    log.debug('[STATS] Team stat collection complete');
+
+    log.debug('[STATS] Setting Match Flags...');
 
     // did the first pick win the match
     if (match.picks) {
@@ -1597,22 +1618,22 @@ function processReplay(file, opts = {}) {
     match.firstFortWin = match.winner === match.firstFort;
     match.firstKeepWin = match.winner === match.firstKeep;
 
-    console.log('[STATS] Match Flags set.');
+    log.debug('[STATS] Match Flags set.');
 
     return { match, players, status : ReplayStatus.OK };
   }
   catch (err) {
-    console.log(err);
+    log.error({error: err});
     return {status: ReplayStatus.Failure};
   }
 }
 
 function processScoreArray(data, match, players, playerIDMap) {
-  console.log("[SCORE DATA] Processing Start");
+  log.debug('[SCORE DATA] Processing Start');
 
   // ok so custom games have empty arrays where observers sit
   // also the data isn't continuous, i believe the order is the same (as in data
-  // for internal game user 1 comes before game user 2) and the empty arrays just need to 
+  // for internal game user 1 comes before game user 2) and the empty arrays just need to
   // be removed
 
   // iterate through each object...
@@ -1643,7 +1664,7 @@ function processScoreArray(data, match, players, playerIDMap) {
     }
   }
 
-  console.log("[SCORE DATA] Processing Complete");
+  log.debug('[SCORE DATA] Processing Complete');
 }
 
 function processTauntData(players, takedowns, playerBSeq) {
@@ -1845,7 +1866,7 @@ function collectTeamStats(match, players) {
     let structures = {};
     for (let s in match.structures) {
       let structure = match.structures[s];
-      
+
       if (!(structure.name in structures)) {
         structures[structure.name] = {
           lost: 0,
@@ -1999,7 +2020,7 @@ function getFirstObjectiveTeam(match) {
 
       if (blueCt === redCt)
         return null;
-      
+
       return blueCt > redCt ? ReplayTypes.TeamType.Blue : ReplayTypes.TeamType.Red;
     }
     else if (match.map === ReplayTypes.MapType.TowersOfDoom) {
@@ -2016,7 +2037,7 @@ function getFirstObjectiveTeam(match) {
       for (let i = 0; i < 3; i++) {
         if (i >= altars.length)
           break;
-        
+
         if (altars[i].team === ReplayTypes.TeamType.Blue)
           blueCt += 1;
         else if (altars[i].team === ReplayTypes.TeamType.Red)
@@ -2025,7 +2046,7 @@ function getFirstObjectiveTeam(match) {
 
       if (blueCt === redCt)
         return null;
-    
+
       return blueCt > redCt ? ReplayTypes.TeamType.Blue : ReplayTypes.TeamType.Red;
     }
     else if (match.map === ReplayTypes.MapType.CursedHollow) {
@@ -2045,11 +2066,11 @@ function getFirstObjectiveTeam(match) {
 
         if (blueCt >= 3)
           return ReplayTypes.TeamType.Blue;
-        
+
         if (redCt >= 3)
           return ReplayTypes.TeamType.Red;
       }
-      
+
       // if no one got a curse, return null
       return null;
     }
@@ -2079,7 +2100,7 @@ function getFirstObjectiveTeam(match) {
 
       if (blueCt === redCt)
         return null;
-  
+
       return blueCt > redCt ? ReplayTypes.TeamType.Blue : ReplayTypes.TeamType.Red;
     }
     else if (match.map === ReplayTypes.MapType.BattlefieldOfEternity) {
@@ -2109,7 +2130,7 @@ function getFirstObjectiveTeam(match) {
     return null;
   }
   catch (err) {
-    console.log(err);
+    log.error({error: err});
     return null;
   }
 }
@@ -2163,8 +2184,11 @@ exports.processReplay = processReplay;
 exports.ReplayStatus = ReplayStatus;
 exports.StatusString = StatusString;
 exports.getHeader = getHeader;
+exports.getBattletags = getBattletags;
 exports.getFirstObjectiveTeam = getFirstObjectiveTeam;
 exports.winFileTimeToDate = winFileTimeToDate;
 exports.getFirstFortTeam = getFirstFortTeam;
 exports.getFirstKeepTeam = getFirstKeepTeam;
 exports.VERSION = PARSER_VERSION;
+
+log.info({versions: { parser: PARSER_VERSION }}, 'loaded parser.js v' + require('./package.json').version);
