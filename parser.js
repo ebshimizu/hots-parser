@@ -7,6 +7,9 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
+// 2.36.1.67462
+const MAX_SUPPORTED_BUILD = 67462;
+
 const ReplayDataType = {
   game: "gameevents",
   message: "messageevents",
@@ -39,7 +42,8 @@ const ReplayStatus = {
   UnsupportedMap: -3,
   ComputerPlayerFound: -4,
   Incomplete: -5,
-  TooOld: -6
+  TooOld: -6,
+  Unverified: -7
 };
 
 const StatusString = {
@@ -50,7 +54,8 @@ const StatusString = {
   '-3' : 'Unsupported Map',
   '-4' : 'Computer Player Found',
   '-5' : 'Incomplete',
-  '-6' : 'Too Old'
+  '-6' : 'Too Old',
+  '-7' : 'Unverified'
 }
 
 // it's everything except gameevents which is just a massive amount of data
@@ -83,6 +88,7 @@ function parse(file, requestedData, opts) {
 
 // returns a summary of header data (player ID, date, type, map)
 // for checking duplicates
+// header does not do anything that's unsupported by the max build number, so it's fine to run all the time.
 function getHeader(file) {
   try {
     let data = parse(file, [ReplayDataType.header, ReplayDataType.details, ReplayDataType.init, ReplayDataType.tracker, ReplayDataType.lobby]);
@@ -134,6 +140,8 @@ function getHeader(file) {
       let ToonHandle = pdata.m_toon.m_region + '-' + pdata.m_toon.m_programId + '-' + pdata.m_toon.m_realm + '-' + pdata.m_toon.m_id;
       match.playerIDs.push(ToonHandle);
     }
+
+    match.tags = data.tags;
 
     return match;
   }
@@ -193,6 +201,16 @@ function processReplay(file, opts = {}) {
 
     // header data
     match.version = data.header.m_version;
+
+    // version check
+    if (match.version.m_build > MAX_SUPPORTED_BUILD && !opts.overrideVerifiedBuild) {
+      log.warn(`Unverified build number ${match.version.m_build}, aborting. Override this behavior with the 'overrideVerifiedBuild' option.`);
+      return { status: ReplayStatus.Unverified };
+    }
+    else if (match.version.m_build > MAX_SUPPORTED_BUILD && opts.overrideVerifiedBuild === true) {
+      log.warn(`Proceeding with processing unverified build number ${match.version.m_build}. Some values may be missing and unexpected behavior may occur.`);
+    }
+
     match.type = data.header.m_type;
     match.loopLength = data.header.m_elapsedGameLoops;
     match.filename = file;

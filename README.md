@@ -39,6 +39,11 @@ significant processing time as the parser loads and inspects all game events.
 and use the internal attribute code instead.
 Hero names are stored in the `attr.js` file, and will lag behind patches by approximately one day.
 If you'd like to not worry about new heroes causing problems, you will want to set this to true.
+- `overrideVerifiedBuild` : bool, default `false`. Set to true to override the parser's default verification step.
+This step aborts parsing if the given replay file is too new (on an unverified build).
+It is recommended to wait until the parser is updated before running any parsing operations in order to
+account for unexpected or large changes to the replay file format. This setting bypasses this check, and
+should be run at your own risk.
 
 **Returns**
 
