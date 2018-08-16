@@ -371,6 +371,11 @@ const SeasonDates = {
     start: new Date('3-7-2018'),
     end: new Date('7-9-2018'),
     id: 8
+  },
+  '2018 Season 3': {
+    start: new Date('7-9-2018'),
+    end: new Date('9-24-2018'),
+    id: 9
   }
 }
 
