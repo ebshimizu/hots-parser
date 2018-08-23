@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.36.1.67462
-const MAX_SUPPORTED_BUILD = 67462;
+// 2.36.2.67621
+const MAX_SUPPORTED_BUILD = 67621;
 
 const ReplayDataType = {
   game: "gameevents",
