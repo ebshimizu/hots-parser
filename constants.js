@@ -172,7 +172,7 @@ const MapType = {
   Volskaya: 'Volskaya Foundry',
   'Warhead Junction': 'Warhead Junction',   // blizz why
   BraxisHoldout: 'Braxis Holdout',
-  Hanamura: 'Hanamura',
+  Hanamura: 'Hanamura Temple',
   AlteracPass: 'Alterac Pass'
 };
 
@@ -241,7 +241,8 @@ const UnitType = {
   AVCapturePointBeingCappedDummy: 'AVCapturePointBeingCappedDummy',
   AVCapturePointDefender: 'AVCapturePointDefender',
   AllianceCavalry: 'AllianceCavalry',
-  HordeCavalry: 'HordeCavalry'
+  HordeCavalry: 'HordeCavalry',
+  NeutralPayload: 'Payload_Neutral'   // track ownership possible
 };
 
 const BraxisUnitType = {
@@ -266,7 +267,8 @@ const MercUnitType = {
   MercLanerRangedOgre: 'MercLanerRangedOgre',
   MercLanerMeleeOgre: 'MercLanerMeleeOgre',
   MercLanerMeleeKnight: 'MercLanerMeleeKnight',
-  MercLanerRangedMage: 'MercLanerRangedMage'
+  MercLanerRangedMage: 'MercLanerRangedMage',
+  MercLanerSentinel: 'MercLanerSentinel'
   //MercSummonerLanerMinionDummy: 'MercSummonerLanerMinionDummy' -- this is cool but the amount of data it spits out is frankly absurd
 }
 
@@ -285,7 +287,8 @@ const MercUnitString = {
   MercLanerMeleeOgre: 'Melee Ogre',
   MercLanerMeleeKnight: 'Melee Knight',
   MercLanerRangedMage: 'Ranged Mage',
-  MercSummonerLanerMinionDummy: 'Summoned Merc'
+  MercSummonerLanerMinionDummy: 'Summoned Merc',
+  MercLanerSentinel: 'Sentinel'
 }
 
 const MinionXP = {

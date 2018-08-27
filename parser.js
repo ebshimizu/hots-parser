@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.36.2.67621
-const MAX_SUPPORTED_BUILD = 67621;
+// 2.37.0.67679
+const MAX_SUPPORTED_BUILD = 67679;
 
 const ReplayDataType = {
   game: "gameevents",
@@ -607,8 +607,11 @@ function processReplay(file, opts = {}) {
       // hopefully something goes here eventually
     }
     else if (match.map === ReplayTypes.MapType.Hanamura) {
-      // couldn't find much data here, not too worried since it's old
       // can't wait till i have to detect which version of the map this is
+      // i mean i guess it doesn't really matter if the old one fails?
+      // As of 2.37 this refers to new Hanamura Temple
+      // lists payload sequences in order (each object in the array is one payload spawn and completion)
+      match.objective = { events: [] };
     }
     else if (match.map === undefined) {
       log.error('Map name not found. Replay too old?');
@@ -1089,6 +1092,15 @@ function processReplay(file, opts = {}) {
           }
           match.objective[event.m_controlPlayerId - 11].events.push(eventObj);
         }
+        else if (type === ReplayTypes.UnitType.NeutralPayload) {
+          const eventObj = {
+            loop: event._gameloop,
+            born: loopsToSeconds(event._gameloop - match.loopGameStart),
+            id: `${event.m_unitTagIndex}-${event.m_unitTagRecycle}`,
+            control: [ { team: -1, loop: event._gameloop, time: loopsToSeconds(event._gameloop - match.loopGameStart) }]
+          }
+          match.objective.events.push(eventObj);
+        }
         else if (type in ReplayTypes.MercUnitType) {
           // mercs~
           let id = event.m_unitTagIndex + '-' + event.m_unitTagRecycle;
@@ -1284,6 +1296,17 @@ function processReplay(file, opts = {}) {
             }
           }
         }
+        else if (match.map === ReplayTypes.MapType.Hanamura) {
+          // should be the most recent thing
+          let payload = match.objective.events[match.objective.events.length - 1];
+
+          if (payload && payload.id === uid) {
+            payload.died = loopsToSeconds(event._gameloop - match.loopGameStart);
+            payload.winner = payload.control[payload.control.length - 1].team;
+
+            log.trace(`Payload ${uid} died, winner ${payload.winner}`);
+          }
+        }
       }
       else if (event._eventid === ReplayTypes.TrackerEvent.UnitOwnerChange) {
         if (match.map === ReplayTypes.MapType.DragonShire) {
@@ -1345,6 +1368,15 @@ function processReplay(file, opts = {}) {
             beaconEvent.time = loopsToSeconds(event._gameloop - match.loopGameStart);
 
             match.objective.beacons.push(beaconEvent);
+          }
+        }
+        if (match.map === ReplayTypes.MapType.Hanamura) {
+          const id = `${event.m_unitTagIndex}-${event.m_unitTagRecycle}`;
+          let payload = match.objective.events[match.objective.events.length - 1];
+
+          if (payload && payload.id === id) {
+            let team = (event.m_controlPlayerId === 0) ? -1 : event.m_controlPlayerId - 11;
+            payload.control.push({ team, loop: event._gameloop, time: loopsToSeconds(event._gameloop - match.loopGameStart)});
           }
         }
       }
