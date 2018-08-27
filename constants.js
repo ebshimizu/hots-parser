@@ -268,7 +268,8 @@ const MercUnitType = {
   MercLanerMeleeOgre: 'MercLanerMeleeOgre',
   MercLanerMeleeKnight: 'MercLanerMeleeKnight',
   MercLanerRangedMage: 'MercLanerRangedMage',
-  MercLanerSentinel: 'MercLanerSentinel'
+  MercLanerSentinel: 'MercLanerSentinel',
+  ReconCampVisionUnit: 'ReconCampVisionUnit'
   //MercSummonerLanerMinionDummy: 'MercSummonerLanerMinionDummy' -- this is cool but the amount of data it spits out is frankly absurd
 }
 
@@ -288,6 +289,7 @@ const MercUnitString = {
   MercLanerMeleeKnight: 'Melee Knight',
   MercLanerRangedMage: 'Ranged Mage',
   MercSummonerLanerMinionDummy: 'Summoned Merc',
+  ReconCampVisionUnit: 'ReconCampVisionUnit',
   MercLanerSentinel: 'Sentinel'
 }
 
