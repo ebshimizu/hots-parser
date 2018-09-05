@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.37.0.67679
-const MAX_SUPPORTED_BUILD = 67679;
+// 2.37.0.67985
+const MAX_SUPPORTED_BUILD = 67985;
 
 const ReplayDataType = {
   game: "gameevents",
@@ -321,7 +321,7 @@ function processReplay(file, opts = {}) {
       pdoc.rawDate = match.rawDate;
       pdoc.map = match.map;
       pdoc.date = match.date;
-      pdoc.build = match.build;
+      pdoc.build = match.version.m_build;
       pdoc.mode = match.mode;
       pdoc.version = match.version;
       pdoc.globes = { count: 0, events: []};
