@@ -46,6 +46,7 @@ exports.heroAttribute = {
   "Malf": "Malfurion",
   "MALT": "Malthael",
   "Mdvh": "Medivh",
+  "MEPH": "Mephisto",
   "Mura": "Muradin",
   "Murk": "Murky",
   "Witc": "Nazeebo",
