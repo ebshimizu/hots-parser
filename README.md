@@ -4,20 +4,33 @@ A node-based Heroes of the Storm parser.
 
 ## Setup
 
-While we get this set up to be a node package, your best bet to use the parser is to
-clone it and install the required packages manually:
+### From npm
+
+`npm add hots-parser`
+
+### From Repository
 
 ```
 git clone
+cd hots-parser
 npm install
 ```
 
-Eventually this package will be in npm, but it isn't ready just quite yet.
+## Updating the Parser
+
+`hots-parser` relies on [heroprotocol.js](https://github.com/nydus/heroprotocol) to access the StormReplay files.
+These files are pulled directly from the Blizzard [heroprotocol](https://github.com/blizzard/heroprotocol) repository.
+If you're running this on a server, you will need to monitor the Blizzard repository and run `node node_modules/heroprotocol/postinstall.js`
+to keep the parser up to date.
+
+Note that `hots-parser` will throw an `unverifiedBuild` error if I have not personally verified
+that the new build works correctly with the parser. You'll have to also monitor this module for updates to
+keep everything updated. It might be best to run `postinstall.js` after updating this module just to be safe.
 
 ## Usage
 
 ```
-const Parser = require('./parser.js')
+const Parser = require('hots-parser')
 ```
 
 ### processReplay()
@@ -77,7 +90,7 @@ This parser does not allow AI games to be parsed and will throw an error if this
 * `UnsupportedMap = -3` - Brawls are included in unsupported maps.
 * `ComputerPlayerFound = -4` - AI games will not parse.
 * `Incomplete = -5` - Partial replay detected. If the parser does not see a core destroyed it will be unable to find a winner and this status will be returned.
-* `TooOld = -6` - Related to Incomplete. Usually returned if a winner is unable to be determined from some very old replays.
+* `TooOld = -6` - Related to Incomplete. Usually returned if a winner is unable to be determined from some very old replays, or some recent incomplete replays.
 
 **Notes**
 
