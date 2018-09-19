@@ -7,8 +7,10 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.37.0.67985
-const MAX_SUPPORTED_BUILD = 67985;
+// 2.37.1.68509
+const MAX_SUPPORTED_BUILD = 68509;
+
+const BSTEP_FRAME_THRESHOLD = 4;
 
 const ReplayDataType = {
   game: "gameevents",
@@ -1608,7 +1610,7 @@ function processReplay(file, opts = {}) {
             else {
               let currentSeq = playerBSeq[id].length - 1;
               let currentStep = playerBSeq[id][currentSeq].length - 1;
-              if (Math.abs(playerBSeq[id][currentSeq][currentStep]._gameloop - event._gameloop) <= 16) {
+              if (Math.abs(playerBSeq[id][currentSeq][currentStep]._gameloop - event._gameloop) <= BSTEP_FRAME_THRESHOLD) {
                 playerBSeq[id][currentSeq].push(event);
               }
               else {
@@ -1722,7 +1724,7 @@ function processTauntData(players, takedowns, playerBSeq) {
   for (let id in playerBSeq) {
     let playerSeqs = playerBSeq[id];
     for (let i = 0; i < playerSeqs.length; i++) {
-      if (playerSeqs[i].length > 1) {
+      if (playerSeqs[i].length > 2) {
         // reformat the data and place in the player data
         let bStep = {};
         bStep.start = playerSeqs[i][0]._gameloop;
@@ -2240,5 +2242,6 @@ exports.winFileTimeToDate = winFileTimeToDate;
 exports.getFirstFortTeam = getFirstFortTeam;
 exports.getFirstKeepTeam = getFirstKeepTeam;
 exports.VERSION = PARSER_VERSION;
+exports.MAX_SUPPORTED_BUILD = MAX_SUPPORTED_BUILD;
 
 log.info({versions: { parser: PARSER_VERSION }}, 'loaded parser.js v' + require('./package.json').version);
