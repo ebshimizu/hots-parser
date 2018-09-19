@@ -10,7 +10,7 @@ const attrs = require('./attr.js');
 // 2.37.1.68509
 const MAX_SUPPORTED_BUILD = 68509;
 
-const BSTEP_FRAME_THRESHOLD = 4;
+const BSTEP_FRAME_THRESHOLD = 6;
 
 const ReplayDataType = {
   game: "gameevents",
