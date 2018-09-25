@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.37.1.68509
-const MAX_SUPPORTED_BUILD = 68509;
+// 2.38.0.68740
+const MAX_SUPPORTED_BUILD = 68740;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -1590,12 +1590,13 @@ function processReplay(file, opts = {}) {
       var playerBSeq = {};
       for (let i = 0; i < gameLog.length; i++) {
         // the b action is likely of type 27 however i don't actually know how to interpret that data
-        // working theory: eventid 27 abilLink 119 is the current b.
+        // working theory: eventid 27 abilLink 116 is the current b.
         // this actually varies per-build, so while i missed a few builds, it should work at the moment.
         let event = gameLog[i];
         if (event._eventid === 27) {
           if ((event.m_abil && match.version.m_build < 61872 && event.m_abil.m_abilLink === 200) ||
-              (event.m_abil && match.version.m_build >= 61872 && event.m_abil.m_abilLink === 119))
+              (event.m_abil && match.version.m_build >= 61872 && match.version.m_build < 68740 && event.m_abil.m_abilLink === 119) ||
+              (event.m_abil && match.version.m_build >= 68740 && event.m_abil.m_abilLink === 116))
           {
             // player ids are actually off by one here
             let playerID = event._userid.m_userId;
