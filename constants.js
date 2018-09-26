@@ -216,6 +216,7 @@ const UnitType = {
   SunShrine: 'DragonShireShrineSun',
   MoonShrine: 'DragonShireShrineMoon',
   GardenTerrorVehicle: 'VehiclePlantHorror',
+  GardenTerror: 'GardenTerror',
   DragonVehicle: 'VehicleDragon',
   Webweaver: 'SoulEater',
   Triglav: 'VolskayaVehicle',

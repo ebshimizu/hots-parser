@@ -556,8 +556,8 @@ function processReplay(file, opts = {}) {
     }
     else if (match.map === ReplayTypes.MapType.HauntedWoods) {
       var currentTerror = {0: {}, 1: {}};
-      match.objective[0] = { count: 0, events: []};
-      match.objective[1] = { count: 0, events: []};
+      match.objective[0] = { count: 0, events: [], units: []};
+      match.objective[1] = { count: 0, events: [], units: []};
     }
     else if (match.map === ReplayTypes.MapType.HauntedMines) {
       // unfortunately the mines map seems to be missing some older events that had the info about the golem spawns
@@ -993,6 +993,17 @@ function processReplay(file, opts = {}) {
 
           currentTerror[spawn.team] = spawn;
         }
+        else if (type === ReplayTypes.UnitType.GardenTerror) {
+          let unit = {
+            team: event.m_upkeepPlayerId - 11,
+            tag: event.m_unitTagIndex,
+            rtag: event.m_unitTagRecycle,
+            time: loopsToSeconds(event._gameloop - match.loopGameStart),
+            loop: event._gameloop
+          };
+
+          match.objective[unit.team].units.push(unit);
+        }
         else if (type === ReplayTypes.UnitType.DragonVehicle) {
           // current dragon knight spawn
           dragon = { tag: event.m_unitTagIndex, rtag: event.m_unitTagRecycle };
@@ -1179,6 +1190,20 @@ function processReplay(file, opts = {}) {
               currentTerror[t].active = false;
 
               log.trace('[TRACKER] Team ' + team + ' terror lasted for ' + loopsToSeconds(duration) + ' seconds');
+            }
+          }
+          
+          // check terror death 
+          for (let t in match.objective) {
+            let units = match.objective[t].units;
+            for (let ui in units) {
+              let u = units[ui];
+              let tid = `${u.tag}-${u.rtag}`;
+              
+              if (tid === uid) {
+                u.end = loopsToSeconds(event._gameloop - match.loopGameStart);
+                u.duration = u.end - u.start;
+              }
             }
           }
         }
@@ -2036,7 +2061,6 @@ function combineIntervals(intervals) {
 function getFirstObjectiveTeam(match) {
   try {
     if (match.map === ReplayTypes.MapType.DragonShire ||
-        match.map === ReplayTypes.MapType.HauntedWoods ||
         match.map === ReplayTypes.MapType.Crypts ||
         match.map === ReplayTypes.MapType.Volskaya ||
         match.map === ReplayTypes.MapType.AlteracPass) {
@@ -2049,6 +2073,19 @@ function getFirstObjectiveTeam(match) {
         return null;
 
       return match.objective[0].events[0].time < match.objective[1].events[0].time ? 0 : 1;
+    }
+    else if (match.map === ReplayTypes.MapType.HauntedWoods) {
+      // check id of first terror
+      // shutouts
+      if (match.objective[0].units.length === 0 && match.objective[1].units.length > 0)
+        return 1;
+      if (match.objective[1].units.length === 0 && match.objective[0].units.length > 0)
+        return 0;
+      if (match.objective[0].units[0].loop === match.objective[1].units[0].loop)
+        return null;
+
+      return match.objective[0].units[0].loop < match.objective[1].units[0].loop ? 0 : 1;
+      
     }
     else if (match.map === ReplayTypes.MapType.ControlPoints) {
       // add all shots to an array, sort by time, count
