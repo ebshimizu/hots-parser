@@ -384,7 +384,7 @@ const SeasonDates = {
     id: 9
   },
   '2018 Season 4': {
-    stats: new Date('9-24-2018'),
+    start: new Date('9-24-2018'),
     end: new Date('12-15-2018'),
     id: 10
   }
