@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.38.1.68778
-const MAX_SUPPORTED_BUILD = 68778;
+// 2.38.2.69185
+const MAX_SUPPORTED_BUILD = 69185;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -1645,7 +1645,9 @@ function processReplay(file, opts = {}) {
             }
           }
           // taunts and dances
-          else if (event.m_abil && event.m_abil.m_abilLink === 19) {
+          else if ((event.m_abil && match.version.m_build < 68740 && event.m_abil.m_abilLink === 19) ||
+                   (event.m_abil && match.version.m_build >= 68740 && event.m_abil.m_abilLink === 22))
+          {
             let playerID = event._userid.m_userId;
             let id = playerLobbyID[playerID];
 

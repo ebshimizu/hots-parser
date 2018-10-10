@@ -154,7 +154,9 @@ const ScoreEventNames = {
   EndOfMatchAwardMostTimeOnPointBoolean: 'Most Time on Point Award',
   TimeOnPoint: 'Time On Point',
   TimeInTemple: 'Time In Temple',
-  TimeOnPayload: 'Time on Payload'
+  TimeOnPayload: 'Time on Payload',
+  PhysicalDamage: 'Physical Damage',
+  SpellDamage: 'Spell Damage'
   // I skip the "Wins___" categories, they appear to be used for daily quest completion checks
 };
 
