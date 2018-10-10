@@ -44,6 +44,7 @@ exports.heroAttribute = {
   "Drya": "Lunara",
   "Maie": "Maiev",
   "Malf": "Malfurion",
+  "MalG": "Mal'Ganis",
   "MALT": "Malthael",
   "Mdvh": "Medivh",
   "MEPH": "Mephisto",
