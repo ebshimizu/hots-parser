@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.38.2.69185
-const MAX_SUPPORTED_BUILD = 69185;
+// 2.38.3.69264
+const MAX_SUPPORTED_BUILD = 69264;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -83,7 +83,10 @@ function parse(file, requestedData, opts) {
   }
 
   // battletags
-  replay.tags = getBattletags(replay[ReplayDataType.lobby]);
+  replay.tags = {};
+  if (replay[ReplayDataType.lobby]) {
+    replay.tags = getBattletags(replay[ReplayDataType.lobby]);
+  }
 
   return replay;
 }
@@ -155,20 +158,22 @@ function getHeader(file) {
 
 
 function getBattletags(buffer) {
-  let btagRegExp = XRegExp('(\\p{L}|\\d){3,24}#\\d{4,10}[zØ]?', 'g');
-  let matches = buffer.toString().match(btagRegExp);
+  if (buffer) {
+    let btagRegExp = XRegExp('(\\p{L}|\\d){3,24}#\\d{4,10}[zØ]?', 'g');
+    let matches = buffer.toString().match(btagRegExp);
 
-  // process
-  let tagMap = [];
-  for (let match of matches) {
-    // split into name + tag
-    let name = match.substr(0, match.indexOf('#'));
-    let tag = match.substr(match.indexOf('#') + 1);
-    tagMap.push({ tag, name, full: match });
-    log.trace('Found BattleTag: ' + match);
+    // process
+    let tagMap = [];
+    for (let match of matches) {
+      // split into name + tag
+      let name = match.substr(0, match.indexOf('#'));
+      let tag = match.substr(match.indexOf('#') + 1);
+      tagMap.push({ tag, name, full: match });
+      log.trace('Found BattleTag: ' + match);
+    }
+
+    return tagMap;
   }
-
-  return tagMap;
 }
 
 // processes a replay file and adds it to the database
