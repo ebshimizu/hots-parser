@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.38.2.69185
-const MAX_SUPPORTED_BUILD = 69185;
+// 2.38.3.69264
+const MAX_SUPPORTED_BUILD = 69264;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -171,9 +171,9 @@ function getBattletags(buffer) {
       tagMap.push({ tag, name, full: match });
       log.trace('Found BattleTag: ' + match);
     }
-  }
 
-  return tagMap;
+    return tagMap;
+  }
 }
 
 // processes a replay file and adds it to the database
