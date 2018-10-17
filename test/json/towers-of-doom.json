@@ -4393,6 +4393,7 @@
           }
         ]
       },
+      "heroLevel": 20,
       "skin": "GenjiBaseVar5",
       "announcer": "NoAnnouncerPack",
       "mount": "MountSurfShark18",
@@ -5537,6 +5538,7 @@
           }
         ]
       },
+      "heroLevel": 9,
       "skin": "FenixBaseVar1",
       "announcer": "AlarakA",
       "mount": "MountNexagonOverwatch",
@@ -6711,6 +6713,7 @@
           }
         ]
       },
+      "heroLevel": 14,
       "skin": "DeckardBaseVar1",
       "announcer": "JainaA",
       "mount": "MountSurfShark18",
@@ -7839,6 +7842,7 @@
           }
         ]
       },
+      "heroLevel": 20,
       "skin": "BarbarianSummer18",
       "announcer": "AlexstraszaA",
       "mount": "MountEyeVar2",
@@ -9045,6 +9049,7 @@
           }
         ]
       },
+      "heroLevel": 18,
       "skin": "MuradinMarauder",
       "announcer": "IllidanA",
       "mount": "HorseBlack",
@@ -9910,6 +9915,7 @@
           }
         ]
       },
+      "heroLevel": 17,
       "skin": "WitchDoctorGrimskullToxicskull",
       "announcer": "NoAnnouncerPack",
       "mount": "MountCloudWhimsy",
@@ -10657,6 +10663,7 @@
           }
         ]
       },
+      "heroLevel": 4,
       "skin": "FirebatBaseVar1",
       "announcer": "ETCA",
       "mount": "MountBearRank17Base",
@@ -11504,6 +11511,7 @@
           }
         ]
       },
+      "heroLevel": 20,
       "skin": "BrightwingUltimateBlack",
       "announcer": "BrightwingA",
       "mount": "",
@@ -12313,6 +12321,7 @@
           }
         ]
       },
+      "heroLevel": 15,
       "skin": "CrusaderEnforcerVar1",
       "announcer": "NoAnnouncerPack",
       "mount": "MountRamCyberVar3",
@@ -13156,6 +13165,7 @@
           }
         ]
       },
+      "heroLevel": 10,
       "skin": "AlarakHunterVar1",
       "announcer": "DVaAnnouncer",
       "mount": "MountSnowflake",

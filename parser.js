@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.38.3.69264
-const MAX_SUPPORTED_BUILD = 69264;
+// 2.39.0.69350
+const MAX_SUPPORTED_BUILD = 69350;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -366,6 +366,7 @@ function processReplay(file, opts = {}) {
           playerIDMap[event.m_intData[0].m_value] = event.m_stringData[1].m_value;
 
           const attrName = data.attributeevents.scopes[event.m_intData[0].m_value]['4002'][0].value;
+          players[event.m_stringData[1].m_value].heroLevel = parseInt(data.attributeevents.scopes[event.m_intData[0].m_value]['4008'][0].value);
           players[event.m_stringData[1].m_value].hero = opts.useAttributeName ? attrName : attrs.heroAttribute[attrName];
 
           // right hero names should be tracked here...
