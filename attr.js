@@ -52,6 +52,7 @@ exports.heroAttribute = {
   "Murk": "Murky",
   "Witc": "Nazeebo",
   "Nova": "Nova",
+  "ORPH": "Orphea",
   "Prob": "Probius",
   "Ragn": "Ragnaros",
   "Rayn": "Raynor",

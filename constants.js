@@ -51,7 +51,8 @@ const StatEventType = {
   SixTowersEnd: 'Six Town Event End',
   TowersFortCaptured: 'Town Captured',
   Upvote: 'EndOfGameUpVotesCollected',
-  BraxisWaveStart: `BraxisHoldoutMapEventComplete`
+  BraxisWaveStart: `BraxisHoldoutMapEventComplete`,
+  GhostShipCaptured: 'GhostShipCaptured'
 };
 
 const StructureStrings = {

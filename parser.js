@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.39.2.69823
-const MAX_SUPPORTED_BUILD = 69823;
+// 2.40.0.70200
+const MAX_SUPPORTED_BUILD = 70200;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -613,6 +613,8 @@ function processReplay(file, opts = {}) {
     }
     else if (match.map === ReplayTypes.MapType.BlackheartsBay) {
       // hopefully something goes here eventually
+      match.objective[0] = { count: 0, events: [] };
+      match.objective[1] = { count: 0, events: [] };
     }
     else if (match.map === ReplayTypes.MapType.Hanamura) {
       // can't wait till i have to detect which version of the map this is
@@ -947,6 +949,17 @@ function processReplay(file, opts = {}) {
           match.objective.waves[waveID].startTime = loopsToSeconds(event._gameloop - match.loopGameStart);
 
           match.objective.waves[waveID].startScore = {0: event.m_fixedData[0].m_value / 4096, 1: event.m_fixedData[1].m_value / 4096};
+        }
+        else if (event.m_eventName === ReplayTypes.StatEventType.GhostShipCaptured) {
+          let team = event.m_fixedData[0].m_value / 4096 - 1;
+          match.objective[team].events.push({
+            loop: event._gameloop,
+            time: loopsToSeconds(event._gameloop - match.loopGameStart),
+            team: team,
+            teamScore: event.m_intData[0].m_value,
+            otherScore: event.m_intData[1].m_value
+          });
+          match.objective[team].count += 1;
         }
       }
       else if (event._eventid === ReplayTypes.TrackerEvent.UnitBorn) {
@@ -2071,7 +2084,10 @@ function getFirstObjectiveTeam(match) {
     if (match.map === ReplayTypes.MapType.DragonShire ||
         match.map === ReplayTypes.MapType.Crypts ||
         match.map === ReplayTypes.MapType.Volskaya ||
-        match.map === ReplayTypes.MapType.AlteracPass) {
+        match.map === ReplayTypes.MapType.AlteracPass ||
+        match.map === ReplayTypes.MapType.BlackheartsBay) {
+      if (match.objective[0].events.length === 0 && match.objective[1].events.length === 0)
+        return null;
       // shutouts
       if (match.objective[0].events.length === 0 && match.objective[1].events.length > 0)
         return 1;
@@ -2222,8 +2238,7 @@ function getFirstObjectiveTeam(match) {
 
       return null;
     }
-    // haunted mines and blackhearts: unsure how to detect first objective
-    // (which honeslty for blackheart should be easy but isn't)
+    // haunted mines: unsure how to detect first objective
 
     return null;
   }
