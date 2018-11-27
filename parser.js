@@ -324,6 +324,7 @@ function processReplay(file, opts = {}) {
       pdoc.sprays = [];
       pdoc.taunts = [];
       pdoc.dances = [];
+      pdoc.units = {};
       pdoc.votes = 0;
       pdoc.rawDate = match.rawDate;
       pdoc.map = match.map;
@@ -466,7 +467,7 @@ function processReplay(file, opts = {}) {
         }
 
         if (match.version.m_build < 66292) {
-          // prior to build 66292, there were only two bans. isn this case, the second ban
+          // prior to build 66292, there were only two bans. in this case, the second ban
           // came in the middle. After this patch, the second ban is actually a first round
           // ban (technically). It will be marked as such.
           if (obj.attrid === 4025) {
@@ -938,8 +939,10 @@ function processReplay(file, opts = {}) {
           players[playerIDMap[targetPlayer]].votes = event.m_intData[2].m_value;
         }
         else if (event.m_eventName === ReplayTypes.StatEventType.RegenGlobePickedUp) {
-          let globe = { loop: event._gameloop };
-          globe.time = loopsToSeconds(globe.loop - match.loopGameStart);
+          let globe = {
+            loop: event._gameloop,
+            time: loopsToSeconds(event._gameloop - match.loopGameStart)
+          };
           let id = playerIDMap[event.m_intData[0].m_value];
           players[id].globes.count += 1;
           players[id].globes.events.push(globe);
@@ -1148,6 +1151,69 @@ function processReplay(file, opts = {}) {
           str.team = event.m_controlPlayerId - 11;
           match.structures[id] = str;
         }
+        else if (type.startsWith('Hero')) {
+          // check for valid player
+          if (event.m_controlPlayerId in playerIDMap) {
+            // hero spawn
+            const id = `${event.m_unitTagIndex}-${event.m_unitTagRecycle}`;
+            const playerID = playerIDMap[event.m_controlPlayerId];
+            players[playerID].units[id] = {
+              lives: [],
+              name: type
+            };
+            players[playerID].units[id].lives.push({
+              born: loopsToSeconds(event._gameloop - match.loopGameStart),
+              locations: [{
+                x: event.m_x,
+                y: event.m_y,
+                time: loopsToSeconds(event._gameloop - match.loopGameStart)
+              }]
+            });
+          }
+        }
+      }
+      else if (event._eventid === ReplayTypes.TrackerEvent.UnitRevived) {
+        // heroes, all maps
+        const uid = `${event.m_unitTagIndex}-${event.m_unitTagRecycle}`;
+
+        for (const pid in playerIDMap) {
+          const player = players[playerIDMap[pid]];
+          if (uid in player.units) {
+            player.units[uid].lives.push({
+              born: loopsToSeconds(event._gameloop - match.loopGameStart),
+              locations: [{
+                x: event.m_x,
+                y: event.m_y,
+                time: loopsToSeconds(event._gameloop - match.loopGameStart)
+              }]
+            });
+          }
+        }
+      }
+      else if (event._eventid === ReplayTypes.TrackerEvent.UnitPositions) {
+        // get first index
+        let unitIndex = event.m_firstUnitIndex;
+        for (let i = 0; i < event.m_items.length; i += 3) {
+          // check players to see if unit index is present (players don't appear to get recycled,
+          // so tag index should be fine)
+          unitIndex += event.m_items[i];
+          let x = event.m_items[i + 1];
+          let y = event.m_items[i + 2];
+
+          for (const pid in playerIDMap) {
+            const player = players[playerIDMap[pid]];
+            for (const uid in player.units) {
+              if (uid.startsWith(unitIndex)) {
+                const currentLife = player.units[uid].lives[player.units[uid].lives.length - 1];
+                currentLife.locations.push({
+                  x,
+                  y,
+                  time: loopsToSeconds(event._gameloop - match.loopGameStart)
+                });
+              }
+            }
+          }
+        }
       }
       else if (event._eventid === ReplayTypes.TrackerEvent.UnitDied) {
         let tag = event.m_unitTagIndex;
@@ -1174,6 +1240,21 @@ function processReplay(file, opts = {}) {
           match.structures[uid].destroyed = loopsToSeconds(event._gameloop - match.loopGameStart);
 
           log.trace('[STRUCTURES] Team ' + match.structures[uid].team + ' ' + match.structures[uid].type + ' destroyed');
+        }
+
+        // heroes, all maps
+        for (const pid in playerIDMap) {
+          const player = players[playerIDMap[pid]];
+          if (uid in player.units) {
+            const currentLife = player.units[uid].lives[player.units[uid].lives.length - 1];
+            currentLife.died = loopsToSeconds(event._gameloop - match.loopGameStart);
+            currentLife.duration = currentLife.died - currentLife.born;
+            currentLife.locations.push({
+              x: event.m_x,
+              y: event.m_y,
+              time: currentLife.died
+            });
+          }
         }
 
         // Haunted Mines - check for matching golem death
@@ -1516,6 +1597,18 @@ function processReplay(file, opts = {}) {
           if (!('died' in units[j])) {
             units[j].died = loopsToSeconds(match.loopLength - match.loopGameStart);
           }
+        }
+      }
+    }
+
+    // hero life cleanup
+    for (const pid in playerIDMap) {
+      const player = players[playerIDMap[pid]];
+      for (uid in player.units) {
+        const currentLife = player.units[uid].lives[player.units[uid].lives.length - 1];
+        if (!currentLife.died) {
+          // won't record death time? didn't technically die
+          currentLife.duration = loopsToSeconds(match.loopLength - match.loopGameStart) - currentLife.born;
         }
       }
     }
