@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.40.1.70616
-const MAX_SUPPORTED_BUILD = 70616;
+// 2.41.0.70920
+const MAX_SUPPORTED_BUILD = 70920;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
@@ -1640,7 +1640,8 @@ function processReplay(file, opts = {}) {
         if (event._eventid === 27) {
           if ((event.m_abil && match.version.m_build < 61872 && event.m_abil.m_abilLink === 200) ||
               (event.m_abil && match.version.m_build >= 61872 && match.version.m_build < 68740 && event.m_abil.m_abilLink === 119) ||
-              (event.m_abil && match.version.m_build >= 68740 && event.m_abil.m_abilLink === 116))
+              (event.m_abil && match.version.m_build >= 68740 && match.version.m_build < 70682 && event.m_abil.m_abilLink === 116) ||
+              (event.m_abil && match.version.m_build >= 70682 && event.m_abil.m_abilLink === 112))
           {
             // player ids are actually off by one here
             let playerID = event._userid.m_userId;
