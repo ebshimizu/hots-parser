@@ -7,8 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-// 2.41.0.70920
-const MAX_SUPPORTED_BUILD = 70920;
+// 2.41.1.71040
+const MAX_SUPPORTED_BUILD = 71040;
 
 const BSTEP_FRAME_THRESHOLD = 6;
 
