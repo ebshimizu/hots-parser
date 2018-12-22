@@ -7,6 +7,8 @@ const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
+log.level = 'trace';
+
 // 2.41.2.71138
 const MAX_SUPPORTED_BUILD = 71138;
 
@@ -1139,7 +1141,17 @@ function processReplay(file, opts = {}) {
         else if (type in ReplayTypes.MercUnitType) {
           // mercs~
           let id = event.m_unitTagIndex + '-' + event.m_unitTagRecycle;
-          let unit = { loop: event._gameloop, team: event.m_controlPlayerId - 11, type: event.m_unitTypeName};
+          let unit = {
+            loop: event._gameloop,
+            team: event.m_controlPlayerId - 11,
+            type: event.m_unitTypeName,
+            locations: [
+              {
+                x: event.m_x,
+                y: event.m_y
+              }
+            ]
+          };
           unit.time = loopsToSeconds(unit.loop - match.loopGameStart);
           match.mercs.units[id] = unit;
 
@@ -1213,6 +1225,18 @@ function processReplay(file, opts = {}) {
               }
             }
           }
+
+          // check mercs
+          // mercs need check that a) the index matches, and b) unit is alive (non-recycled)
+          for (const mercID in match.mercs.units) {
+            if (mercID.startsWith(unitIndex)) {
+              // if duration is present, it died
+              if (!match.mercs.units[mercID].duration) {
+                match.mercs.units[mercID].locations.push({x, y});
+              }
+            }
+          }
+
         }
       }
       else if (event._eventid === ReplayTypes.TrackerEvent.UnitDied) {
@@ -1230,6 +1254,10 @@ function processReplay(file, opts = {}) {
         // mercs, all maps
         if (uid in match.mercs.units) {
           match.mercs.units[uid].duration = loopsToSeconds(event._gameloop - match.mercs.units[uid].loop);
+          match.mercs.units[uid].locations.push({
+            x: event.m_x,
+            y: event.m_y
+          });
 
           log.trace('[MERCS] Mercenary id ' + uid + ' died');
         }
