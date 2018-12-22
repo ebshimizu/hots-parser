@@ -1652,7 +1652,6 @@ function processReplay(file, opts = {}) {
     match.XPBreakdown.push(team0XPEnd);
     match.XPBreakdown.push(team1XPEnd);
 
-
     // get a few more bits of summary data from the players...
     match.teams = {0: { ids: [], names: [], heroes: [] }, 1: { ids: [], names: [], heroes: [] }};
     match.teams[0].takedowns = match.team0Takedowns;
@@ -1837,6 +1836,22 @@ function processReplay(file, opts = {}) {
     log.debug('[STATS] Collecting Team Stats...');
 
     collectTeamStats(match, players);
+
+    // also compute some xp stats here for 41.0
+    // passive xp rate
+    match.teams[0].stats.passiveXPRate = team0XPEnd.breakdown.TrickleXP / match.length;
+    match.teams[1].stats.passiveXPRate = team1XPEnd.breakdown.TrickleXP / match.length;
+
+    // passive diff from normal
+    // normal rate is 20 xp/s
+    const passiveXP = 20;
+    const baselinePassive = passiveXP * match.length;
+
+    match.teams[0].stats.passiveXPDiff = team0XPEnd.breakdown.TrickleXP / baselinePassive;
+    match.teams[1].stats.passiveXPDiff = team1XPEnd.breakdown.TrickleXP / baselinePassive;
+
+    match.teams[0].stats.passiveXPGain = team0XPEnd.breakdown.TrickleXP - baselinePassive;
+    match.teams[1].stats.passiveXPGain = team1XPEnd.breakdown.TrickleXP - baselinePassive;
 
     log.debug('[STATS] Team stat collection complete');
 
