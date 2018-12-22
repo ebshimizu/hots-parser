@@ -1164,6 +1164,12 @@ function processReplay(file, opts = {}) {
           match.structures[id] = str;
         }
         else if (type.startsWith('Hero')) {
+          // there are a few special cases that get skipped (see: lost vikings)
+          // TLV spawns a special controller for all of the three heroes, but isn't a targetable unit
+          if (type === 'HeroLostVikingsController') {
+            continue;
+          }
+
           // check for valid player
           if (event.m_controlPlayerId in playerIDMap) {
             // hero spawn
@@ -1646,7 +1652,6 @@ function processReplay(file, opts = {}) {
     match.XPBreakdown.push(team0XPEnd);
     match.XPBreakdown.push(team1XPEnd);
 
-    log.debug('[TRACKER] Event Analysis Complete');
 
     // get a few more bits of summary data from the players...
     match.teams = {0: { ids: [], names: [], heroes: [] }, 1: { ids: [], names: [], heroes: [] }};
@@ -1707,6 +1712,14 @@ function processReplay(file, opts = {}) {
     }
 
     match.winningPlayers = match.teams[match.winner].ids;
+
+    log.debug('[TRACKER] Performing hero lifespan analysis');
+
+    analyzeUptime(match, players);
+
+    log.debug('[TRACKER] Hero lifespan analysis complete');
+
+    log.debug('[TRACKER] Event Analysis Complete');
 
     log.debug('[MESSAGES] Message Processing Start...');
 
@@ -2171,10 +2184,89 @@ function collectTeamStats(match, players) {
   }
 }
 
+function analyzeUptime(match, players) {
+  // compute per player uptime intervals (due to TLV, have to combine intervals)
+  for (id in players) {
+    analyzePlayerHeroUptime(players[id]);
+  }
+
+  match.teams[0].heroLifespan = analyzeTeamPlayerUptime(0, players);
+  match.teams[1].heroLifespan = analyzeTeamPlayerUptime(1, players);
+
+  // TODO: comparative analysis
+  // - time w hero advantage
+}
+
+function analyzePlayerHeroUptime(player) {
+  // combine life intervals, and that's basically it.
+  // time spent dead is the stat here, but i need a bit more detail
+  const intervals = [];
+  for (let unitId in player.units) {
+    const unit = player.units[unitId];
+    for (const life of unit.lives) {
+      if (!life.died) {
+        intervals.push([life.born, player.length]);
+      }
+      else {
+        intervals.push([life.born, life.died]);
+      }
+    }
+  }
+
+  player.lifespan = combineIntervals(intervals);
+}
+
+function analyzeTeamPlayerUptime(team, players) {
+  // team is an int
+  const events = [];
+  for (const id in players) {
+    // check lifespans, add events
+    for (const life of players[id].lifespan) {
+      // skip preinit
+      if (life[0] > 0) {
+        events.push({ time: life[0], str: 1 });
+      }
+
+      // if it's the last one, don't add a death
+      if (life[1] !== players[id].length) {
+        events.push({ time: life[1], str: -1 });
+      }
+    }
+  }
+
+  // sort events by time
+  events.sort(function(a, b) {
+    if (a.time > b.time)
+      return 1;
+    else if (a.time < b.time)
+      return -1;
+    return 0;    
+  });
+
+  // starting at strength 5, modify strength every time an event occurs
+  const teamLifespan = [{ time: 0, heroes: 5 }];
+  let currentHeroes = 5;
+  for (const event of events) {
+    currentHeroes += event.str;
+
+    teamLifespan.push({
+      time: event.time,
+      heroes: currentHeroes
+    });
+  }
+
+  // TODO: analyze intervals for
+  // - wipes + wipe time
+  // - avg hero str
+  // - time w full team
+
+  return teamLifespan;
+}
+
 // lifted from http://blog.sodhanalibrary.com/2015/06/merge-intervals-using-javascript.html
 function combineIntervals(intervals) {
   if (intervals.length <= 1)
-    return;
+    return intervals;
 
   // sort
   intervals.sort(function(a, b) {
