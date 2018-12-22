@@ -12,7 +12,7 @@ log.level = 'trace';
 // 2.41.2.71138
 const MAX_SUPPORTED_BUILD = 71138;
 
-const BSTEP_FRAME_THRESHOLD = 6;
+const BSTEP_FRAME_THRESHOLD = 8;
 
 const ReplayDataType = {
   game: "gameevents",
@@ -1775,9 +1775,15 @@ function processReplay(file, opts = {}) {
             if (playerBSeq[id].length === 0)
               playerBSeq[id].push([event]);
             else {
-              let currentSeq = playerBSeq[id].length - 1;
-              let currentStep = playerBSeq[id][currentSeq].length - 1;
-              if (Math.abs(playerBSeq[id][currentSeq][currentStep]._gameloop - event._gameloop) <= BSTEP_FRAME_THRESHOLD) {
+              const currentSeq = playerBSeq[id].length - 1;
+              const currentStep = playerBSeq[id][currentSeq].length - 1;
+              const currentEvent = playerBSeq[id][currentSeq][currentStep];
+              
+              // sequence tracks in what order inputs happened, in order to b step there's gotta be a
+              // move command between the b presses, so if the sequence diff is 1, then it's not a bstep
+              if (Math.abs(currentEvent._gameloop - event._gameloop) <= BSTEP_FRAME_THRESHOLD &&
+                Math.abs(currentEvent.m_sequence - event.m_sequence) > 1)
+              {
                 playerBSeq[id][currentSeq].push(event);
               }
               else {
