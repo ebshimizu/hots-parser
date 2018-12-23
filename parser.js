@@ -2220,8 +2220,9 @@ function analyzeUptime(match, players) {
   match.teams[1].avgHeroesAlive = team1Uptime.avgHeroesAlive;
   match.teams[1].aces = team0Uptime.wipes;
 
-  // TODO: comparative analysis
-  // - time w hero advantage
+  // time w hero advantage
+  match.teams[0].timeWithHeroAdv = timeWithHeroAdv(match.teams[0].uptime, match.teams[1].uptime, match.length);
+  match.teams[1].timeWithHeroAdv = timeWithHeroAdv(match.teams[1].uptime, match.teams[0].uptime, match.length);
 }
 
 function analyzePlayerHeroUptime(player) {
@@ -2326,6 +2327,56 @@ function analyzeTeamPlayerUptime(team, players) {
     wipes,
     avgHeroesAlive
   };
+}
+
+function timeWithHeroAdv(base, compare, matchLength) {
+  // for every pt, compare team strength
+  const xs = [];
+  for (const x of base)
+    xs.push(x.time);
+
+  for (const x of compare)
+    xs.push(x.time);
+
+  xs.sort(function(a, b) {
+    if (a > b) {
+      return 1;
+    }
+    else if (a < b) {
+      return -1;
+    }
+    return 0;
+  });
+
+  // compare at all time points
+  let advTime = 0;
+  for (let i = 0; i < xs.length; i++) {
+    const baseStr = getStrAtTime(base, xs[i]);
+    const compareStr = getStrAtTime(compare, xs[i]);
+    if (baseStr > compareStr) {
+      // interval length
+      if (i + 1 >= xs.length) {
+        advTime += matchLength - xs[i]; 
+      }
+      else {
+        advTime += xs[i + 1] - xs[i];
+      }
+    }
+  }
+
+  return advTime;
+}
+
+function getStrAtTime(data, time) {
+  let str = 0;
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i];
+
+    if (d.time <= time)
+      str = d.heroes;
+  }
+
+  return str;
 }
 
 // lifted from http://blog.sodhanalibrary.com/2015/06/merge-intervals-using-javascript.html
