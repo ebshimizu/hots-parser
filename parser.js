@@ -2205,8 +2205,20 @@ function analyzeUptime(match, players) {
     analyzePlayerHeroUptime(players[id]);
   }
 
-  match.teams[0].heroLifespan = analyzeTeamPlayerUptime(0, players);
-  match.teams[1].heroLifespan = analyzeTeamPlayerUptime(1, players);
+  team0Uptime = analyzeTeamPlayerUptime(0, players);
+  team1Uptime = analyzeTeamPlayerUptime(1, players);
+
+  match.teams[0].uptime = team0Uptime.teamLifespan;
+  match.teams[0].uptimeHistogram = team0Uptime.heroCount;
+  match.teams[0].wipes = team0Uptime.wipes;
+  match.teams[0].avgHeroesAlive = team0Uptime.avgHeroesAlive;
+  match.teams[0].aces = team1Uptime.wipes;
+
+  match.teams[1].uptime = team1Uptime.teamLifespan;
+  match.teams[1].uptimeHistogram = team1Uptime.heroCount;
+  match.teams[1].wipes = team1Uptime.wipes;
+  match.teams[1].avgHeroesAlive = team1Uptime.avgHeroesAlive;
+  match.teams[1].aces = team0Uptime.wipes;
 
   // TODO: comparative analysis
   // - time w hero advantage
@@ -2234,7 +2246,14 @@ function analyzePlayerHeroUptime(player) {
 function analyzeTeamPlayerUptime(team, players) {
   // team is an int
   const events = [];
+  let matchLength = 0;
   for (const id in players) {
+    if (players[id].team !== team)
+      continue;
+
+    // savin for later
+    matchLength = players[id].length;
+
     // check lifespans, add events
     for (const life of players[id].lifespan) {
       // skip preinit
@@ -2270,12 +2289,43 @@ function analyzeTeamPlayerUptime(team, players) {
     });
   }
 
-  // TODO: analyze intervals for
-  // - wipes + wipe time
-  // - avg hero str
-  // - time w full team
+  // analyze intervals
+  const heroCount = {};
+  let wipes = 0;
+  let avgHeroesAlive = 0;
 
-  return teamLifespan;
+  for (let i = 0; i < teamLifespan.length; i++) {
+    let nextTime;
+    if (i + 1 >= teamLifespan.length) {
+      // pull match length from any player
+      nextTime = matchLength;
+    }
+    else {
+      nextTime = teamLifespan[i + 1].time;
+    }
+ 
+    const dur = nextTime - teamLifespan[i].time;
+    const str = teamLifespan[i].heroes;
+
+    if (!(str in heroCount))
+      heroCount[str] = 0;
+    
+    heroCount[str] += dur;
+
+    if (str === 0)
+      wipes += 1;
+
+    avgHeroesAlive += str * dur;
+  }
+
+  avgHeroesAlive = avgHeroesAlive / matchLength;
+
+  return {
+    teamLifespan,
+    heroCount,
+    wipes,
+    avgHeroesAlive
+  };
 }
 
 // lifted from http://blog.sodhanalibrary.com/2015/06/merge-intervals-using-javascript.html
