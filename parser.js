@@ -1712,12 +1712,6 @@ function processReplay(file, opts = {}) {
 
     match.winningPlayers = match.teams[match.winner].ids;
 
-    log.debug('[TRACKER] Performing hero lifespan analysis');
-
-    analyzeUptime(match, players);
-
-    log.debug('[TRACKER] Hero lifespan analysis complete');
-
     log.debug('[TRACKER] Event Analysis Complete');
 
     log.debug('[MESSAGES] Message Processing Start...');
@@ -1836,6 +1830,9 @@ function processReplay(file, opts = {}) {
     log.debug('[STATS] Collecting Team Stats...');
 
     collectTeamStats(match, players);
+    computeLevelDiff(match);
+    analyzeLevelAdv(match);
+    analyzeUptime(match, players);
 
     // also compute some xp stats here for 41.0
     // passive xp rate
@@ -2200,6 +2197,8 @@ function collectTeamStats(match, players) {
 }
 
 function analyzeUptime(match, players) {
+  log.debug('[STATS] Performing hero lifespan analysis');
+
   // compute per player uptime intervals (due to TLV, have to combine intervals)
   for (id in players) {
     analyzePlayerHeroUptime(players[id]);
@@ -2208,21 +2207,23 @@ function analyzeUptime(match, players) {
   team0Uptime = analyzeTeamPlayerUptime(0, players);
   team1Uptime = analyzeTeamPlayerUptime(1, players);
 
-  match.teams[0].uptime = team0Uptime.teamLifespan;
-  match.teams[0].uptimeHistogram = team0Uptime.heroCount;
-  match.teams[0].wipes = team0Uptime.wipes;
-  match.teams[0].avgHeroesAlive = team0Uptime.avgHeroesAlive;
-  match.teams[0].aces = team1Uptime.wipes;
+  match.teams[0].stats.uptime = team0Uptime.teamLifespan;
+  match.teams[0].stats.uptimeHistogram = team0Uptime.heroCount;
+  match.teams[0].stats.wipes = team0Uptime.wipes;
+  match.teams[0].stats.avgHeroesAlive = team0Uptime.avgHeroesAlive;
+  match.teams[0].stats.aces = team1Uptime.wipes;
 
-  match.teams[1].uptime = team1Uptime.teamLifespan;
-  match.teams[1].uptimeHistogram = team1Uptime.heroCount;
-  match.teams[1].wipes = team1Uptime.wipes;
-  match.teams[1].avgHeroesAlive = team1Uptime.avgHeroesAlive;
-  match.teams[1].aces = team0Uptime.wipes;
+  match.teams[1].stats.uptime = team1Uptime.teamLifespan;
+  match.teams[1].stats.uptimeHistogram = team1Uptime.heroCount;
+  match.teams[1].stats.wipes = team1Uptime.wipes;
+  match.teams[1].stats.avgHeroesAlive = team1Uptime.avgHeroesAlive;
+  match.teams[1].stats.aces = team0Uptime.wipes;
 
   // time w hero advantage
-  match.teams[0].timeWithHeroAdv = timeWithHeroAdv(match.teams[0].uptime, match.teams[1].uptime, match.length);
-  match.teams[1].timeWithHeroAdv = timeWithHeroAdv(match.teams[1].uptime, match.teams[0].uptime, match.length);
+  match.teams[0].stats.timeWithHeroAdv = timeWithHeroAdv(match.teams[0].stats.uptime, match.teams[1].stats.uptime, match.length);
+  match.teams[1].stats.timeWithHeroAdv = timeWithHeroAdv(match.teams[1].stats.uptime, match.teams[0].stats.uptime, match.length);
+
+  log.debug('[STATS] Hero lifespan analysis complete');
 }
 
 function analyzePlayerHeroUptime(player) {
@@ -2377,6 +2378,119 @@ function getStrAtTime(data, time) {
   }
 
   return str;
+}
+
+function computeLevelDiff(match) {
+  // format level timings
+  const adv = [];
+  for (let t in match.levelTimes) {
+    for (let lv in match.levelTimes[t]) {
+      let level = match.levelTimes[t][lv];
+      level.team = t;
+      adv.push(level);
+
+      if (level.level === 1)
+        continue;
+    }
+
+    let keys = Object.keys(match.levelTimes[t]);
+    let last = keys[keys.length - 1];
+    adv.push({
+      team: t,
+      time: match.length,
+      level: match.levelTimes[t][last].level
+    });
+  }
+
+  // level advantage
+  // calculate the intervals and the level diff at each interval
+  adv.sort(function(a, b) {
+    if (a.time === b.time)
+      return 0;
+    if (a.time < b.time)
+      return -1;
+
+    return 1;
+  });
+
+  let start = 0;
+  let currentLevelDiff = 0;
+  let blueLevel = 1;
+  let redLevel = 1;
+  const levelAdvTimeline = [];
+  for (let i = 0; i < adv.length; i++) {
+    let event = adv[i];
+
+    if (event.team === "0") {
+      blueLevel = event.level;
+    }
+    else {
+      redLevel = event.level;
+    }
+
+    // blue = positive, red = negative
+    let newLevelDiff = blueLevel - redLevel;
+
+    if (newLevelDiff !== currentLevelDiff) {
+      // end the previous group
+      let item = {
+        start,
+        end: event.time,
+        levelDiff: currentLevelDiff
+      };
+      item.length = item.end - item.start;
+      levelAdvTimeline.push(item);
+
+      start = event.time;
+      currentLevelDiff = newLevelDiff;
+    }
+  }
+
+  // final levels
+  let lastLevelDiff = blueLevel - redLevel;
+  let lastItem = {
+    start,
+    end: match.length,
+    levelDiff: lastLevelDiff
+  };
+  lastItem.length = lastItem.end - lastItem.start;
+  levelAdvTimeline.push(lastItem);
+  match.levelAdvTimeline = levelAdvTimeline;
+}
+
+function analyzeLevelAdv(match) {
+  let blueAdvTime = 0;
+  let redAdvTime = 0;
+  let blueMaxAdv = 0;
+  let redMaxAdv = 0;
+  let blueLvlAvg = 0;
+  let redLvlAvg = 0;
+  
+  for (const lv of match.levelAdvTimeline) {
+    if (lv.levelDiff > 0) {
+      blueAdvTime += lv.length;
+      blueLvlAvg += lv.length * Math.abs(lv.levelDiff);
+
+      if (Math.abs(lv.levelDiff) > blueMaxAdv) {
+        blueMaxAdv = Math.abs(lv.levelDiff);
+      }
+    }
+    else if (lv.levelDiff < 0) {
+      redAdvTime += lv.length;
+      redLvlAvg += lv.length * Math.abs(lv.levelDiff);
+
+      if (Math.abs(lv.levelDiff) > redMaxAdv) {
+        redMaxAdv = Math.abs(lv.levelDiff);
+      }
+    }
+  }
+
+  match.teams[0].stats.levelAdvTime = blueAdvTime;
+  match.teams[1].stats.levelAdvTime = redAdvTime;
+  match.teams[0].stats.maxLevelAdv = blueMaxAdv;
+  match.teams[1].stats.maxLevelAdv = redMaxAdv;
+  match.teams[0].stats.avgLevelAdv = blueLvlAvg / match.length;
+  match.teams[1].stats.avgLevelAdv = redLvlAvg / match.length;
 }
 
 // lifted from http://blog.sodhanalibrary.com/2015/06/merge-intervals-using-javascript.html
