@@ -1,9 +1,9 @@
+const PARSER_VERSION = 7;
 const log = require('./pino.js');
 const fs = require('fs');
 const path = require('path');
 const ReplayTypes = require(path.join(__dirname, 'constants.js'));
 const heroprotocol = require('heroprotocol');
-const PARSER_VERSION = 6;
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
