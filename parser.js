@@ -2222,6 +2222,8 @@ function analyzeUptime(match, players) {
   // time w hero advantage
   match.teams[0].stats.timeWithHeroAdv = timeWithHeroAdv(match.teams[0].stats.uptime, match.teams[1].stats.uptime, match.length);
   match.teams[1].stats.timeWithHeroAdv = timeWithHeroAdv(match.teams[1].stats.uptime, match.teams[0].stats.uptime, match.length);
+  match.teams[0].stats.pctWithHeroAdv = match.teams[0].stats.timeWithHeroAdv / match.length;
+  match.teams[1].stats.pctWithHeroAdv = match.teams[1].stats.timeWithHeroAdv / match.length;
 
   log.debug('[STATS] Hero lifespan analysis complete');
 }
