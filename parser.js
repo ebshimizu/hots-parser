@@ -2491,6 +2491,8 @@ function analyzeLevelAdv(match) {
   match.teams[1].stats.maxLevelAdv = redMaxAdv;
   match.teams[0].stats.avgLevelAdv = blueLvlAvg / match.length;
   match.teams[1].stats.avgLevelAdv = redLvlAvg / match.length;
+  match.teams[0].stats.levelAdvPct = blueAdvTime / match.length;
+  match.teams[1].stats.levelAdvPct = redAdvTime / match.length;
 }
 
 // lifted from http://blog.sodhanalibrary.com/2015/06/merge-intervals-using-javascript.html
