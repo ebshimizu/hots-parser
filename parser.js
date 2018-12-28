@@ -1657,7 +1657,7 @@ function processReplay(file, opts = {}) {
     match.teams[0].takedowns = match.team0Takedowns;
     match.teams[1].takedowns = match.team1Takedowns;
 
-    // final stats pass
+    // final match stats pass
     for (let p in players) {
       players[p].gameStats.KDA = players[p].gameStats.Takedowns / Math.max(players[p].gameStats.Deaths, 1);
       players[p].gameStats.damageDonePerDeath = players[p].gameStats.HeroDamage / Math.max(1, players[p].gameStats.Deaths);
@@ -1849,6 +1849,22 @@ function processReplay(file, opts = {}) {
 
     match.teams[0].stats.passiveXPGain = team0XPEnd.breakdown.TrickleXP - baselinePassive;
     match.teams[1].stats.passiveXPGain = team1XPEnd.breakdown.TrickleXP - baselinePassive;
+
+    // store a few team stats in the player stat object
+    // final team stats pass
+    for (let p in players) {
+      let teamStats = match.teams[players[p].team].stats;
+
+      players[p].gameStats.passiveXPRate = teamStats.passiveXPRate;
+      players[p].gameStats.passiveXPDiff = teamStats.passiveXPDiff;
+      players[p].gameStats.passiveXPGain = teamStats.passiveXPGain;
+      players[p].gameStats.aces = teamStats.aces;
+      players[p].gameStats.wipes = teamStats.wipes;
+      players[p].gameStats.timeWithHeroAdv = teamStats.timeWithHeroAdv;
+      players[p].gamestats.pctWithHeroAdv = teamStats.pctWithHeroAdv;
+      players[p].gameStats.levelAdvTime = teamStats.levelAdvTime;
+      players[p].gameStats.levelAdvPct = teamStats.levelAdvPct;
+    }
 
     log.debug('[STATS] Team stat collection complete');
 
