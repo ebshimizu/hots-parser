@@ -7,7 +7,8 @@ const heroprotocol = require('heroprotocol');
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
-log.level = 'trace';
+// uncomment for debug
+// log.level = 'trace';
 
 // 2.41.2.71138
 const MAX_SUPPORTED_BUILD = 71138;
