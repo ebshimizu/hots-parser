@@ -1852,8 +1852,8 @@ function processReplay(file, opts = {}) {
 
     // store a few team stats in the player stat object
     // final team stats pass
-    for (let p in players) {
-      let teamStats = match.teams[players[p].team].stats;
+    for (const p in players) {
+      const teamStats = match.teams[players[p].team].stats;
 
       players[p].gameStats.passiveXPRate = teamStats.passiveXPRate;
       players[p].gameStats.passiveXPDiff = teamStats.passiveXPDiff;
@@ -1861,7 +1861,7 @@ function processReplay(file, opts = {}) {
       players[p].gameStats.aces = teamStats.aces;
       players[p].gameStats.wipes = teamStats.wipes;
       players[p].gameStats.timeWithHeroAdv = teamStats.timeWithHeroAdv;
-      players[p].gamestats.pctWithHeroAdv = teamStats.pctWithHeroAdv;
+      players[p].gameStats.pctWithHeroAdv = teamStats.pctWithHeroAdv;
       players[p].gameStats.levelAdvTime = teamStats.levelAdvTime;
       players[p].gameStats.levelAdvPct = teamStats.levelAdvPct;
     }
