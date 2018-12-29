@@ -189,6 +189,9 @@ function processReplay(file, opts = {}) {
   if (!('useAttributeName' in opts))
     opts.useAttributeName = false;
 
+  if (!('legacyTalentKeys' in opts))
+    opts.legacyTalentKeys = false;
+
   try {
     log.info('Parsing ' + file);
 
@@ -673,7 +676,14 @@ function processReplay(file, opts = {}) {
           // talents
           for (let j = 0; j < event.m_stringData.length; j++) {
             if (event.m_stringData[j].m_key.startsWith('Tier')) {
-              players[playerID].talents[event.m_stringData[j].m_key] = event.m_stringData[j].m_value;
+              let key = event.m_stringData[j].m_key;
+              if (opts.legacyTalentKeys === true) {
+                players[playerID].talents[key] = event.m_stringData[j].m_value;
+              }
+              else {
+                key = key.replace(/\s+/g, '');
+                players[playerID].talents[key] = event.m_stringData[j].m_value;
+              }
             }
           }
         }
@@ -2736,7 +2746,8 @@ function getFirstKeepTeam(match) {
   let t0Keep = match.teams[0].stats.structures.Keep;
   let t1Keep = match.teams[1].stats.structures.Keep;
 
-  // towers of doom doesn't have keeps
+  // towers of doom has keeps but they upgrade from forts,
+  // so if a team ends before the keeps upgrade, it doesn't count
   if (!t0Keep || !t1Keep)
     return -2;
 
