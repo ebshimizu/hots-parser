@@ -29,6 +29,7 @@ exports.heroAttribute = {
   "Guld": "Gul'dan",
   "Hanz": "Hanzo",
   "Illi": "Illidan",
+  "IMPE": "Imperius",
   "Jain": "Jaina",
   "Crus": "Johanna",
   "Junk": "Junkrat",
