@@ -57,6 +57,10 @@ This step aborts parsing if the given replay file is too new (on an unverified b
 It is recommended to wait until the parser is updated before running any parsing operations in order to
 account for unexpected or large changes to the replay file format. This setting bypasses this check, and
 should be run at your own risk.
+- `legacyTalentKeys` : bool, default `false`. Prior to version 7, the talents were stored using keys
+that contained spaces (`Tier 1 Choice`). The spaces have been removed by default in version 7+ (`Tier1Choice`).
+If you are using an application that
+requires the old keys for legacy compatibility reasons, set this option to true.
 
 **Returns**
 
