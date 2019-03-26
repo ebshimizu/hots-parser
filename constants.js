@@ -321,6 +321,7 @@ const GameMode = {
   UnrankedDraft: 50051,
   HeroLeague: 50061,
   TeamLeague: 50071,
+  StormLeague: 50091,
   Custom: -1
 }
 
@@ -332,6 +333,7 @@ const GameModeStrings = {
   50051: 'Unranked Draft',
   50061: 'Hero League',
   50071: 'Team League',
+  50091: 'Storm League',
   '-1': 'Custom'
 }
 
@@ -393,8 +395,13 @@ const SeasonDates = {
   },
   '2019 Season 1': {
     start: new Date('12-11-2018'),
-    end: new Date('3-19-2019'),
+    end: new Date('3-26-2019'),
     id: 11
+  },
+  'Storm League Preseason': {
+    start: new Date('3-26-2019'),
+    end: new Date('6-1-2019'),
+    id: 12
   }
 }
 
