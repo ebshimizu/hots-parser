@@ -453,7 +453,8 @@ function processReplay(file, opts = {}) {
 
     // draft bans check
     if (match.mode === ReplayTypes.GameMode.UnrankedDraft || match.mode === ReplayTypes.GameMode.HeroLeague ||
-        match.mode === ReplayTypes.GameMode.TeamLeague || match.mode === ReplayTypes.GameMode.Custom) {
+        match.mode === ReplayTypes.GameMode.TeamLeague || match.mode === ReplayTypes.GameMode.StormLeague ||
+        match.mode === ReplayTypes.GameMode.Custom) {
       log.debug('Gathering draft data...');
       match.bans = {0: [], 1: []};
       match.picks = {0: [], 1: []};
