@@ -10,8 +10,8 @@ const attrs = require("./attr.js");
 // uncomment for debug
 // log.level = 'trace';
 
-// 2.45.1.74238
-const MAX_SUPPORTED_BUILD = 74238;
+// 2.46.0.74739
+const MAX_SUPPORTED_BUILD = 74739;
 
 const BSTEP_FRAME_THRESHOLD = 8;
 
