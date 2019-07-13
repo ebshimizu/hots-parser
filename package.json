@@ -1,7 +1,7 @@
 {
-  "name": "hots-parser",
+  "name": "hots-parser-fallback",
   "version": "7.46.1",
-  "description": "A node-based Heroes of the Storm match parser.",
+  "description": "A node-based Heroes of the Storm match parser, pointed to the fallback parser repo",
   "main": "parser.js",
   "scripts": {
     "preversion": "npm test",
