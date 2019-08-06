@@ -56,6 +56,7 @@ exports.heroAttribute = {
   Nova: 'Nova',
   ORPH: 'Orphea',
   Prob: 'Probius',
+  NXHU: 'Qhira',
   Ragn: 'Ragnaros',
   Rayn: 'Raynor',
   Rehg: 'Rehgar',
