@@ -10,8 +10,8 @@ const attrs = require('./attr.js');
 // uncomment for debug
 // log.level = 'trace';
 
-// 2.47.1.75792
-const MAX_SUPPORTED_BUILD = 75792;
+// 2.47.2.76003
+const MAX_SUPPORTED_BUILD = 76003;
 
 const BSTEP_FRAME_THRESHOLD = 8;
 
@@ -251,9 +251,7 @@ function processReplay(file, opts = {}) {
       !opts.overrideVerifiedBuild
     ) {
       log.warn(
-        `Unverified build number ${
-          match.version.m_build
-        }, aborting. Override this behavior with the 'overrideVerifiedBuild' option.`
+        `Unverified build number ${match.version.m_build}, aborting. Override this behavior with the 'overrideVerifiedBuild' option.`
       );
       return { status: ReplayStatus.Unverified };
     } else if (
@@ -261,9 +259,7 @@ function processReplay(file, opts = {}) {
       opts.overrideVerifiedBuild === true
     ) {
       log.warn(
-        `Proceeding with processing unverified build number ${
-          match.version.m_build
-        }. Some values may be missing and unexpected behavior may occur.`
+        `Proceeding with processing unverified build number ${match.version.m_build}. Some values may be missing and unexpected behavior may occur.`
       );
     }
 
