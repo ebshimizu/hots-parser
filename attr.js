@@ -15,6 +15,7 @@ exports.heroAttribute = {
   Chen: 'Chen',
   CCho: 'Cho',
   Chro: 'Chromie',
+  DEAT: 'Deathwing',
   DECK: 'Deckard',
   Deha: 'Dehaka',
   Diab: 'Diablo',
