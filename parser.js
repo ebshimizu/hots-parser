@@ -10,8 +10,8 @@ const attrs = require('./attr.js');
 // uncomment for debug
 // log.level = 'trace';
 
-// 2.48.4.77406
-const MAX_SUPPORTED_BUILD = 77406;
+// 2.49.0.77525
+const MAX_SUPPORTED_BUILD = 77525;
 
 const BSTEP_FRAME_THRESHOLD = 8;
 
@@ -2179,7 +2179,11 @@ function processReplay(file, opts = {}) {
               event.m_abil.m_abilLink === 116) ||
             (event.m_abil &&
               match.version.m_build >= 70682 &&
-              event.m_abil.m_abilLink === 112)
+              match.version.m_build < 77525 &&
+              event.m_abil.m_abilLink === 112) ||
+            (event.m_abil &&
+              match.version.m_build >= 77525 &&
+              event.m_abil.m_abilLink === 114)
           ) {
             // player ids are actually off by one here
             let playerID = event._userid.m_userId;
