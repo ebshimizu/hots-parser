@@ -10,8 +10,8 @@ const attrs = require('./attr.js');
 // uncomment for debug
 // log.level = 'trace';
 
-// 2.49.4.78725
-const MAX_SUPPORTED_BUILD = 78725;
+// 2.50.0.79033
+const MAX_SUPPORTED_BUILD = 79033;
 
 const BSTEP_FRAME_THRESHOLD = 8;
 
@@ -24,7 +24,7 @@ const ReplayDataType = {
   details: 'details',
   init: 'initdata',
   stats: 'stats',
-  lobby: 'battlelobby'
+  lobby: 'battlelobby',
 };
 
 // lil bit of duplication here but for fallback reasons, this exists
@@ -36,7 +36,7 @@ const ReplayToProtocolType = {
   header: heroprotocol.HEADER,
   details: heroprotocol.DETAILS,
   initdata: heroprotocol.INITDATA,
-  battlelobby: 'replay.server.battlelobby'
+  battlelobby: 'replay.server.battlelobby',
 };
 
 const ReplayStatus = {
@@ -48,7 +48,7 @@ const ReplayStatus = {
   ComputerPlayerFound: -4,
   Incomplete: -5,
   TooOld: -6,
-  Unverified: -7
+  Unverified: -7,
 };
 
 const StatusString = {
@@ -60,7 +60,7 @@ const StatusString = {
   '-4': 'Computer Player Found',
   '-5': 'Incomplete',
   '-6': 'Too Old',
-  '-7': 'Unverified'
+  '-7': 'Unverified',
 };
 
 // it's everything except gameevents which is just a massive amount of data
@@ -71,7 +71,7 @@ const CommonReplayData = [
   ReplayDataType.header,
   ReplayDataType.details,
   ReplayDataType.init,
-  ReplayDataType.lobby
+  ReplayDataType.lobby,
 ];
 const AllReplayData = [
   ReplayDataType.game,
@@ -81,7 +81,7 @@ const AllReplayData = [
   ReplayDataType.header,
   ReplayDataType.details,
   ReplayDataType.init,
-  ReplayDataType.lobby
+  ReplayDataType.lobby,
 ];
 
 function parse(file, requestedData, opts) {
@@ -98,7 +98,7 @@ function parse(file, requestedData, opts) {
 
   if (opts) {
     if ('saveToFile' in opts) {
-      fs.writeFile(opts.saveToFile, JSON.stringify(replay, null, 2), function(
+      fs.writeFile(opts.saveToFile, JSON.stringify(replay, null, 2), function (
         err
       ) {
         if (err) throw err;
@@ -126,7 +126,7 @@ function getHeader(file) {
       ReplayDataType.details,
       ReplayDataType.init,
       ReplayDataType.tracker,
-      ReplayDataType.lobby
+      ReplayDataType.lobby,
     ]);
 
     var details = data.details;
@@ -812,7 +812,7 @@ function processReplay(file, opts = {}) {
             if (entry.m_key === 'PlayerID') {
               tData.victim = {
                 player: playerIDMap[entry.m_value],
-                hero: players[playerIDMap[entry.m_value]].hero
+                hero: players[playerIDMap[entry.m_value]].hero,
               };
               victim = playerIDMap[entry.m_value];
             } else if (entry.m_key === 'KillingPlayer') {
@@ -824,7 +824,7 @@ function processReplay(file, opts = {}) {
               } else {
                 tdo = {
                   player: playerIDMap[entry.m_value],
-                  hero: players[playerIDMap[entry.m_value]].hero
+                  hero: players[playerIDMap[entry.m_value]].hero,
                 };
               }
 
@@ -887,7 +887,7 @@ function processReplay(file, opts = {}) {
           let objEvent = {
             team: event.m_intData[2].m_value - 1,
             loop: event._gameloop,
-            damage: event.m_fixedData[0].m_value / 4096
+            damage: event.m_fixedData[0].m_value / 4096,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
 
@@ -906,7 +906,7 @@ function processReplay(file, opts = {}) {
           let objEvent = {
             team: event.m_intData[0].m_value - 1,
             loop: event._gameloop,
-            owned: event.m_intData[1].m_value
+            owned: event.m_intData[1].m_value,
           };
           objEvent.damage = objEvent.owned + 1;
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
@@ -924,7 +924,7 @@ function processReplay(file, opts = {}) {
           let objEvent = {
             winner: event.m_intData[1].m_value - 1,
             loop: event._gameloop,
-            duration: event.m_intData[2].m_value
+            duration: event.m_intData[2].m_value,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
           objEvent.power = event.m_fixedData[0].m_value / 4096;
@@ -937,7 +937,7 @@ function processReplay(file, opts = {}) {
         ) {
           let objEvent = {
             team: event.m_fixedData[0].m_value / 4096 - 1,
-            loop: event._gameloop
+            loop: event._gameloop,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
 
@@ -950,7 +950,7 @@ function processReplay(file, opts = {}) {
         ) {
           let objEvent = {
             team: event.m_fixedData[0].m_value / 4096 - 1,
-            loop: event._gameloop
+            loop: event._gameloop,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
 
@@ -966,7 +966,7 @@ function processReplay(file, opts = {}) {
         ) {
           let objEvent = {
             team: event.m_fixedData[1].m_value / 4096 - 1,
-            loop: event._gameloop
+            loop: event._gameloop,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
 
@@ -982,7 +982,7 @@ function processReplay(file, opts = {}) {
         ) {
           let objEvent = {
             team: event.m_intData[1].m_value - 1,
-            loop: event._gameloop
+            loop: event._gameloop,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
           objEvent.team0Score =
@@ -1003,7 +1003,7 @@ function processReplay(file, opts = {}) {
           let objEvent = {
             team: event.m_intData[1].m_value - 1,
             loop: event._gameloop,
-            type: event.m_stringData[0].m_value
+            type: event.m_stringData[0].m_value,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
           objEvent.duration = event.m_intData[2].m_value;
@@ -1020,7 +1020,7 @@ function processReplay(file, opts = {}) {
           let objEvent = {
             team: event.m_fixedData[0].m_value / 4096 - 1,
             score: event.m_intData[1].m_value,
-            loop: event._gameloop
+            loop: event._gameloop,
           };
           objEvent.time = loopsToSeconds(objEvent.loop - match.loopGameStart);
           currentSpiders.active = true;
@@ -1040,7 +1040,7 @@ function processReplay(file, opts = {}) {
           let cap = {
             loop: event._gameloop,
             type: event.m_stringData[0].m_value,
-            team: event.m_fixedData[0].m_value / 4096 - 1
+            team: event.m_fixedData[0].m_value / 4096 - 1,
           };
           cap.time = loopsToSeconds(cap.loop - match.loopGameStart);
           match.mercs.captures.push(cap);
@@ -1052,7 +1052,7 @@ function processReplay(file, opts = {}) {
                 loop: cap.loop,
                 time: cap.time,
                 type: 'boss',
-                damage: 4
+                damage: 4,
               };
               match.objective[cap.team].events.push(bossEvent);
               match.objective[cap.team].damage += bossEvent.damage;
@@ -1072,7 +1072,7 @@ function processReplay(file, opts = {}) {
           let six = {
             loop: event._gameloop,
             team: event.m_intData[0].m_value - 1,
-            kind: 'capture'
+            kind: 'capture',
           };
           six.time = loopsToSeconds(six.loop - match.loopGameStart);
 
@@ -1083,7 +1083,7 @@ function processReplay(file, opts = {}) {
           let six = {
             loop: event._gameloop,
             team: event.m_intData[0].m_value - 1,
-            kind: 'end'
+            kind: 'end',
           };
           six.time = loopsToSeconds(six.loop - match.loopGameStart);
 
@@ -1093,7 +1093,7 @@ function processReplay(file, opts = {}) {
         ) {
           let fort = {
             loop: event._gameloop,
-            ownedBy: event.m_intData[0].m_value - 11
+            ownedBy: event.m_intData[0].m_value - 11,
           };
           fort.time = loopsToSeconds(fort.loop - match.loopGameStart);
           match.objective.structures.push(fort);
@@ -1101,7 +1101,7 @@ function processReplay(file, opts = {}) {
           // just kinda dump this all into the object. the only important data is the time.
           let lobj = {
             loop: event._gameloop,
-            level: event.m_intData[1].m_value
+            level: event.m_intData[1].m_value,
           };
           // team is mapped by player
           lobj.team = players[playerIDMap[event.m_intData[0].m_value]].team;
@@ -1116,7 +1116,7 @@ function processReplay(file, opts = {}) {
         ) {
           let globe = {
             loop: event._gameloop,
-            time: loopsToSeconds(event._gameloop - match.loopGameStart)
+            time: loopsToSeconds(event._gameloop - match.loopGameStart),
           };
           let id = playerIDMap[event.m_intData[0].m_value];
           players[id].globes.count += 1;
@@ -1131,7 +1131,7 @@ function processReplay(file, opts = {}) {
 
           match.objective.waves[waveID].startScore = {
             0: event.m_fixedData[0].m_value / 4096,
-            1: event.m_fixedData[1].m_value / 4096
+            1: event.m_fixedData[1].m_value / 4096,
           };
         } else if (
           event.m_eventName === ReplayTypes.StatEventType.GhostShipCaptured
@@ -1142,7 +1142,7 @@ function processReplay(file, opts = {}) {
             time: loopsToSeconds(event._gameloop - match.loopGameStart),
             team: team,
             teamScore: event.m_intData[0].m_value,
-            otherScore: event.m_intData[1].m_value
+            otherScore: event.m_intData[1].m_value,
           });
           match.objective[team].count += 1;
         }
@@ -1172,7 +1172,7 @@ function processReplay(file, opts = {}) {
         } else if (type === ReplayTypes.UnitType.MinesBoss) {
           let spawn = {
             loop: event._gameloop,
-            team: event.m_controlPlayerId - 11
+            team: event.m_controlPlayerId - 11,
           };
           spawn.time = loopsToSeconds(spawn.loop - match.loopGameStart);
           spawn.unitTagIndex = event.m_unitTagIndex;
@@ -1195,7 +1195,7 @@ function processReplay(file, opts = {}) {
             team: event.m_upkeepPlayerId - 11,
             active: false,
             tag: event.m_unitTagIndex,
-            rtag: event.m_unitTagRecycle
+            rtag: event.m_unitTagRecycle,
           };
 
           currentTerror[spawn.team] = spawn;
@@ -1205,7 +1205,7 @@ function processReplay(file, opts = {}) {
             tag: event.m_unitTagIndex,
             rtag: event.m_unitTagRecycle,
             time: loopsToSeconds(event._gameloop - match.loopGameStart),
-            loop: event._gameloop
+            loop: event._gameloop,
           };
 
           match.objective[unit.team].units.push(unit);
@@ -1218,7 +1218,7 @@ function processReplay(file, opts = {}) {
             tag: event.m_unitTagIndex,
             rtag: event.m_unitTagRecycle,
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           };
           spider.loop = event._gameloop;
           spider.time = loopsToSeconds(spider.loop - match.loopGameStart);
@@ -1230,7 +1230,7 @@ function processReplay(file, opts = {}) {
             tag: event.m_unitTagIndex,
             rtag: event.m_unitTagRecycle,
             team: event.m_upkeepPlayerId - 11,
-            loop: event._gameloop
+            loop: event._gameloop,
           };
           currentProtector.x = event.m_x;
           currentProtector.y = event.m_y;
@@ -1257,7 +1257,7 @@ function processReplay(file, opts = {}) {
             rtag: event.m_unitTagRecycle,
             loop: event._gameloop,
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           };
           eventObj.time = loopsToSeconds(eventObj.loop - match.loopGameStart);
           eventObj.player = playerIDMap[event.m_controlPlayerId];
@@ -1272,7 +1272,7 @@ function processReplay(file, opts = {}) {
             rtag: event.m_unitTagRecycle,
             loop: event._gameloop,
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           };
           eventObj.team = event.m_controlPlayerId - 11;
           eventObj.time = loopsToSeconds(eventObj.loop - match.loopGameStart);
@@ -1291,20 +1291,20 @@ function processReplay(file, opts = {}) {
               initTime: eventObj.time,
               scores: [],
               endLoop: { 0: 0, 1: 0 },
-              endTime: { 0: 0, 1: 0 }
+              endTime: { 0: 0, 1: 0 },
             };
             waveObj.scores.push({
               loop: event._gameloop,
               time: eventObj.time,
               0: 0,
-              1: 0
+              1: 0,
             });
             match.objective.waves.push(waveObj);
           } else {
             // TODO: wave strength score update
             let score = {
               0: braxisWaveStrength(waveUnits[0], match.version.m_build),
-              1: braxisWaveStrength(waveUnits[1], match.version.m_build)
+              1: braxisWaveStrength(waveUnits[1], match.version.m_build),
             };
             score.loop = event._gameloop;
             score.time = loopsToSeconds(score.loop - match.loopGameStart);
@@ -1322,7 +1322,7 @@ function processReplay(file, opts = {}) {
 
             match.objective.waves[waveID].startScore = {
               0: braxisWaveStrength(waveUnits[0], match.version.m_build),
-              1: braxisWaveStrength(waveUnits[1], match.version.m_build)
+              1: braxisWaveStrength(waveUnits[1], match.version.m_build),
             };
           }
         } else if (type === ReplayTypes.UnitType.BraxisControlPoint) {
@@ -1331,7 +1331,7 @@ function processReplay(file, opts = {}) {
           beacons[id] = {
             tag: event.m_unitTagIndex,
             rtag: event.m_unitTagRecycle,
-            side: y > 100 ? 'top' : 'bottom'
+            side: y > 100 ? 'top' : 'bottom',
           };
         } else if (
           type === ReplayTypes.UnitType.ImmortalHeaven ||
@@ -1345,7 +1345,7 @@ function processReplay(file, opts = {}) {
             loop: event._gameloop,
             type: 'spawn',
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           };
           eventObj.time = loopsToSeconds(eventObj.loop - match.loopGameStart);
           match.objective.warheads.push(eventObj);
@@ -1354,7 +1354,7 @@ function processReplay(file, opts = {}) {
             loop: event._gameloop,
             type: 'dropped',
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           };
           eventObj.time = loopsToSeconds(eventObj.loop - match.loopGameStart);
           match.objective.warheads.push(eventObj);
@@ -1365,7 +1365,7 @@ function processReplay(file, opts = {}) {
           const eventObj = {
             loop: event._gameloop,
             born: loopsToSeconds(event._gameloop - match.loopGameStart),
-            id: event.m_unitTagIndex + '-' + event.m_unitTagRecycle
+            id: event.m_unitTagIndex + '-' + event.m_unitTagRecycle,
           };
           match.objective[event.m_controlPlayerId - 11].events.push(eventObj);
         } else if (type === ReplayTypes.UnitType.NeutralPayload) {
@@ -1377,9 +1377,9 @@ function processReplay(file, opts = {}) {
               {
                 team: -1,
                 loop: event._gameloop,
-                time: loopsToSeconds(event._gameloop - match.loopGameStart)
-              }
-            ]
+                time: loopsToSeconds(event._gameloop - match.loopGameStart),
+              },
+            ],
           };
           match.objective.events.push(eventObj);
         } else if (type in ReplayTypes.MercUnitType) {
@@ -1392,9 +1392,9 @@ function processReplay(file, opts = {}) {
             locations: [
               {
                 x: event.m_x,
-                y: event.m_y
-              }
-            ]
+                y: event.m_y,
+              },
+            ],
           };
           unit.time = loopsToSeconds(unit.loop - match.loopGameStart);
           match.mercs.units[id] = unit;
@@ -1415,7 +1415,7 @@ function processReplay(file, opts = {}) {
             tag: event.m_unitTagIndex,
             rtag: event.m_unitTagRecycle,
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           };
           str.team = event.m_controlPlayerId - 11;
           match.structures[id] = str;
@@ -1433,7 +1433,7 @@ function processReplay(file, opts = {}) {
             const playerID = playerIDMap[event.m_controlPlayerId];
             players[playerID].units[id] = {
               lives: [],
-              name: type
+              name: type,
             };
             players[playerID].units[id].lives.push({
               born: loopsToSeconds(event._gameloop - match.loopGameStart),
@@ -1441,9 +1441,9 @@ function processReplay(file, opts = {}) {
                 {
                   x: event.m_x,
                   y: event.m_y,
-                  time: loopsToSeconds(event._gameloop - match.loopGameStart)
-                }
-              ]
+                  time: loopsToSeconds(event._gameloop - match.loopGameStart),
+                },
+              ],
             });
           }
         }
@@ -1460,9 +1460,9 @@ function processReplay(file, opts = {}) {
                 {
                   x: event.m_x,
                   y: event.m_y,
-                  time: loopsToSeconds(event._gameloop - match.loopGameStart)
-                }
-              ]
+                  time: loopsToSeconds(event._gameloop - match.loopGameStart),
+                },
+              ],
             });
           }
         }
@@ -1485,7 +1485,7 @@ function processReplay(file, opts = {}) {
                 currentLife.locations.push({
                   x,
                   y,
-                  time: loopsToSeconds(event._gameloop - match.loopGameStart)
+                  time: loopsToSeconds(event._gameloop - match.loopGameStart),
                 });
               }
             }
@@ -1521,7 +1521,7 @@ function processReplay(file, opts = {}) {
           );
           match.mercs.units[uid].locations.push({
             x: event.m_x,
-            y: event.m_y
+            y: event.m_y,
           });
 
           log.trace('[MERCS] Mercenary id ' + uid + ' died');
@@ -1556,7 +1556,7 @@ function processReplay(file, opts = {}) {
             currentLife.locations.push({
               x: event.m_x,
               y: event.m_y,
-              time: currentLife.died
+              time: currentLife.died,
             });
           }
         }
@@ -1574,7 +1574,7 @@ function processReplay(file, opts = {}) {
               let objEvent = {
                 startLoop: golem.loop,
                 startTime: golem.time,
-                endLoop: event._gameloop
+                endLoop: event._gameloop,
               };
               objEvent.endTime = loopsToSeconds(
                 objEvent.endLoop - match.loopGameStart
@@ -1730,7 +1730,7 @@ function processReplay(file, opts = {}) {
                 if (!('startScore' in match.objective.waves[waveID])) {
                   match.objective.waves[waveID].startScore = {
                     0: braxisWaveStrength(waveUnits[0], match.version.m_build),
-                    1: braxisWaveStrength(waveUnits[1], match.version.m_build)
+                    1: braxisWaveStrength(waveUnits[1], match.version.m_build),
                   };
                 }
                 match.objective.waves[waveID].startScore[1] = 1;
@@ -1753,7 +1753,7 @@ function processReplay(file, opts = {}) {
                 if (!('startScore' in match.objective.waves[waveID])) {
                   match.objective.waves[waveID].startScore = {
                     0: braxisWaveStrength(waveUnits[0], match.version.m_build),
-                    1: braxisWaveStrength(waveUnits[1], match.version.m_build)
+                    1: braxisWaveStrength(waveUnits[1], match.version.m_build),
                   };
                 }
 
@@ -1861,7 +1861,7 @@ function processReplay(file, opts = {}) {
             let beaconEvent = {
               team,
               loop: event._gameloop,
-              side: beacons[id].side
+              side: beacons[id].side,
             };
             beaconEvent.time = loopsToSeconds(
               event._gameloop - match.loopGameStart
@@ -1881,7 +1881,7 @@ function processReplay(file, opts = {}) {
             payload.control.push({
               team,
               loop: event._gameloop,
-              time: loopsToSeconds(event._gameloop - match.loopGameStart)
+              time: loopsToSeconds(event._gameloop - match.loopGameStart),
             });
           }
         }
@@ -1897,7 +1897,7 @@ function processReplay(file, opts = {}) {
           let objEvent = {
             startLoop: golem.loop,
             startTime: golem.time,
-            endLoop: match.loopLength
+            endLoop: match.loopLength,
           };
           objEvent.endTime = loopsToSeconds(
             objEvent.endLoop - match.loopGameStart
@@ -2040,7 +2040,7 @@ function processReplay(file, opts = {}) {
     // get a few more bits of summary data from the players...
     match.teams = {
       0: { ids: [], names: [], heroes: [] },
-      1: { ids: [], names: [], heroes: [] }
+      1: { ids: [], names: [], heroes: [] },
     };
     match.teams[0].takedowns = match.team0Takedowns;
     match.teams[1].takedowns = match.team1Takedowns;
@@ -2183,7 +2183,11 @@ function processReplay(file, opts = {}) {
               event.m_abil.m_abilLink === 112) ||
             (event.m_abil &&
               match.version.m_build >= 77525 &&
-              event.m_abil.m_abilLink === 114)
+              match.version.m_build < 79033 &&
+              event.m_abil.m_abilLink === 114) ||
+            (event.m_abil &&
+              match.version.m_build >= 79033 &&
+              event.m_abil.m_abilLink === 115)
           ) {
             // player ids are actually off by one here
             let playerID = event._userid.m_userId;
@@ -2388,7 +2392,7 @@ function processTauntData(players, takedowns, playerBSeq) {
             if (td.victim.player === id) bStep.deaths += 1;
 
             if (
-              td.killers.find(function(elem) {
+              td.killers.find(function (elem) {
                 return elem.player === id;
               })
             )
@@ -2417,7 +2421,7 @@ function processTauntData(players, takedowns, playerBSeq) {
           if (td.victim.player === id) player.taunts[i].deaths += 1;
 
           if (
-            td.killers.find(function(elem) {
+            td.killers.find(function (elem) {
               return elem.player === id;
             })
           )
@@ -2439,7 +2443,7 @@ function processTauntData(players, takedowns, playerBSeq) {
           if (td.victim.player === id) player.voiceLines[i].deaths += 1;
 
           if (
-            td.killers.find(function(elem) {
+            td.killers.find(function (elem) {
               return elem.player === id;
             })
           )
@@ -2461,7 +2465,7 @@ function processTauntData(players, takedowns, playerBSeq) {
           if (td.victim.player === id) player.sprays[i].deaths += 1;
 
           if (
-            td.killers.find(function(elem) {
+            td.killers.find(function (elem) {
               return elem.player === id;
             })
           )
@@ -2482,7 +2486,7 @@ function processTauntData(players, takedowns, playerBSeq) {
             if (td.victim.player === id) player.dances[i].deaths += 1;
 
             if (
-              td.killers.find(function(elem) {
+              td.killers.find(function (elem) {
                 return elem.player === id;
               })
             )
@@ -2592,7 +2596,7 @@ function collectTeamStats(match, players) {
         structures[structure.name] = {
           lost: 0,
           destroyed: 0,
-          first: match.length
+          first: match.length,
         };
       }
       if ('destroyed' in structure) {
@@ -2651,7 +2655,7 @@ function collectTeamStats(match, players) {
       TimeRootingEnemyHeroes: 0,
       TimeSpentDead: 0,
       TimeStunningEnemyHeroes: 0,
-      TimeSilencingEnemyHeroes: 0
+      TimeSilencingEnemyHeroes: 0,
     };
     for (let p in players) {
       let player = players[p];
@@ -2752,7 +2756,7 @@ function analyzeTeamPlayerUptime(team, players) {
   }
 
   // sort events by time
-  events.sort(function(a, b) {
+  events.sort(function (a, b) {
     if (a.time > b.time) return 1;
     else if (a.time < b.time) return -1;
     return 0;
@@ -2766,7 +2770,7 @@ function analyzeTeamPlayerUptime(team, players) {
 
     teamLifespan.push({
       time: event.time,
-      heroes: currentHeroes
+      heroes: currentHeroes,
     });
   }
 
@@ -2802,7 +2806,7 @@ function analyzeTeamPlayerUptime(team, players) {
     teamLifespan,
     heroCount,
     wipes,
-    avgHeroesAlive
+    avgHeroesAlive,
   };
 }
 
@@ -2813,7 +2817,7 @@ function timeWithHeroAdv(base, compare, matchLength) {
 
   for (const x of compare) xs.push(x.time);
 
-  xs.sort(function(a, b) {
+  xs.sort(function (a, b) {
     if (a > b) {
       return 1;
     } else if (a < b) {
@@ -2868,13 +2872,13 @@ function computeLevelDiff(match) {
     adv.push({
       team: t,
       time: match.length,
-      level: match.levelTimes[t][last].level
+      level: match.levelTimes[t][last].level,
     });
   }
 
   // level advantage
   // calculate the intervals and the level diff at each interval
-  adv.sort(function(a, b) {
+  adv.sort(function (a, b) {
     if (a.time === b.time) return 0;
     if (a.time < b.time) return -1;
 
@@ -2903,7 +2907,7 @@ function computeLevelDiff(match) {
       let item = {
         start,
         end: event.time,
-        levelDiff: currentLevelDiff
+        levelDiff: currentLevelDiff,
       };
       item.length = item.end - item.start;
       levelAdvTimeline.push(item);
@@ -2918,7 +2922,7 @@ function computeLevelDiff(match) {
   let lastItem = {
     start,
     end: match.length,
-    levelDiff: lastLevelDiff
+    levelDiff: lastLevelDiff,
   };
   lastItem.length = lastItem.end - lastItem.start;
   levelAdvTimeline.push(lastItem);
@@ -2966,7 +2970,7 @@ function combineIntervals(intervals) {
   if (intervals.length <= 1) return intervals;
 
   // sort
-  intervals.sort(function(a, b) {
+  intervals.sort(function (a, b) {
     if (a[0] > b[0]) {
       return 1;
     } else if (a[0] < b[0]) {
@@ -3053,7 +3057,7 @@ function getFirstObjectiveTeam(match) {
         match.objective[0].events,
         match.objective[1].events
       );
-      shots.sort(function(a, b) {
+      shots.sort(function (a, b) {
         return a.loop - b.loop;
       });
 
@@ -3079,7 +3083,7 @@ function getFirstObjectiveTeam(match) {
         match.objective[0].events,
         match.objective[1].events
       );
-      altars.sort(function(a, b) {
+      altars.sort(function (a, b) {
         return a.loop - b.loop;
       });
 
@@ -3105,7 +3109,7 @@ function getFirstObjectiveTeam(match) {
         match.objective[0].events,
         match.objective[1].events
       );
-      tributes.sort(function(a, b) {
+      tributes.sort(function (a, b) {
         return a.loop - b.loop;
       });
 
@@ -3127,7 +3131,7 @@ function getFirstObjectiveTeam(match) {
         match.objective[0].events,
         match.objective[1].events
       );
-      nukes.sort(function(a, b) {
+      nukes.sort(function (a, b) {
         return a.loop - b.loop;
       });
 
