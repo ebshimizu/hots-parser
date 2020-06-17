@@ -578,6 +578,7 @@ function processReplay(file, opts = {}) {
       }
 
       // picks
+      const pickOrder = { 0: [], 1: [] };
       for (let e in data.trackerevents) {
         let msg = data.trackerevents[e];
 
@@ -586,15 +587,34 @@ function processReplay(file, opts = {}) {
 
           if (!('first' in match.picks)) match.picks.first = player.team;
 
-          // conveniently we just need which player picks and then we have the hero name yay
-          if (match.picks[player.team].indexOf(player.hero) < 0) {
-            match.picks[player.team].push(player.hero);
-          } else {
-            log.warn(
-              'Match has invalid draft data, recovering as much data as possible...'
-            );
-          }
+          // due to swaps, player pick order isn't necessarily correct.
+          // also due to this implementation not allowing use of internal hero identifier,
+          // we have to do a little extra processing here...
+          // record actual player pick order
+          pickOrder[player.team].push({
+            hero: msg.m_hero,
+            id: msg.m_controllingPlayer,
+          });
+        } else if (msg._event === 'NNet.Replay.Tracker.SHeroSwappedEvent') {
+          // find the hero id and assign a new player id
+          const player = players[playerWorkingSlotID[msg.m_newControllingPlayer]];
+          const idx = pickOrder[player.team].findIndex(
+            (p) => p.hero === msg.m_hero
+          );
+          pickOrder[player.team][idx].id = msg.m_newControllingPlayer;
         }
+      }
+
+      // map to hero names
+      try {
+        match.picks[0] = pickOrder[0].map(
+          (p) => players[playerWorkingSlotID[p.id]].hero
+        );
+        match.picks[1] = pickOrder[1].map(
+          (p) => players[playerWorkingSlotID[p.id]].hero
+        );
+      } catch (e) {
+        console.log(`Error processing draft data: ${e}`);
       }
 
       log.debug('Draft data complete');
