@@ -50,6 +50,7 @@ exports.heroAttribute = {
   MalG: "Mal'Ganis",
   MALT: 'Malthael',
   Mdvh: 'Medivh',
+  HMEI: 'Mei',
   MEPH: 'Mephisto',
   Mura: 'Muradin',
   Murk: 'Murky',
