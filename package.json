@@ -32,7 +32,7 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
-    "heroprotocol": "^2.0.0",
+    "heroprotocol-fallback": "github:ebshimizu/heroprotocol-1",
     "pino": "^4.17.5",
     "xregexp": "^4.2.0"
   }
