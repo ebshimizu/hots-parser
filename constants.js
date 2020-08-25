@@ -400,8 +400,28 @@ const SeasonDates = {
   },
   'Storm League Preseason': {
     start: new Date('3-26-2019'),
-    end: new Date('6-1-2019'),
+    end: new Date('8-6-2019'),
     id: 12
+  },
+  '2019 Season 2': {
+    start: new Date('8-6-2019'),
+    end: new Date('12-3-2019'),
+    id: 13
+  },
+  '2020 Season 1': {
+    start: new Date('12-3-2019'),
+    end: new Date('4-14-2020'),
+    id: 14
+  },
+  '2020 Season 2': {
+    start: new Date('4-14-2020'),
+    end: new Date('6-23-2020'),
+    id: 15
+  },
+  '2020 Season 3': {
+    start: new Date('6-23-2020'),
+    end: new Date('9-8-2020'),
+    id: 16
   }
 }
 
