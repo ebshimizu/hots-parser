@@ -1281,7 +1281,7 @@ function processReplay(file, opts = {}) {
           };
           eventObj.time = loopsToSeconds(eventObj.loop - match.loopGameStart);
           eventObj.player = playerIDMap[event.m_controlPlayerId];
-          eventObj.team = players[eventObj.player].team;
+          eventObj.team = eventObj.player ? players[eventObj.player].team : event.m_upkeepPlayerId - 11;
 
           nukes[id] = eventObj;
         } else if (type in ReplayTypes.BraxisUnitType) {
