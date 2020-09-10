@@ -3,15 +3,15 @@ const log = require('./pino.js');
 const fs = require('fs');
 const path = require('path');
 const ReplayTypes = require(path.join(__dirname, 'constants.js'));
-const heroprotocol = require('heroprotocol-fallback');
+const heroprotocol = require('heroprotocol');
 const XRegExp = require('xregexp');
 const attrs = require('./attr.js');
 
 // uncomment for debug
 // log.level = 'trace';
 
-// 2.51.2.81376
-const MAX_SUPPORTED_BUILD = 81376;
+// 2.52.0.81700
+const MAX_SUPPORTED_BUILD = 81700;
 
 const BSTEP_FRAME_THRESHOLD = 8;
 

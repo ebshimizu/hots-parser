@@ -1,6 +1,6 @@
 {
   "name": "hots-parser",
-  "version": "7.52.1",
+  "version": "7.52.2",
   "description": "A node-based Heroes of the Storm match parser.",
   "main": "parser.js",
   "scripts": {
@@ -32,7 +32,7 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
-    "heroprotocol-fallback": "github:ebshimizu/heroprotocol-1",
+    "heroprotocol": "github:GaryIrick/heroprotocol",
     "pino": "^4.17.5",
     "xregexp": "^4.2.0"
   }
