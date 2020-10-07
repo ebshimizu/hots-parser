@@ -579,30 +579,37 @@ function processReplay(file, opts = {}) {
 
       // picks
       const pickOrder = { 0: [], 1: [] };
-      for (let e in data.trackerevents) {
-        let msg = data.trackerevents[e];
+      try {
+        for (let e in data.trackerevents) {
+          let msg = data.trackerevents[e];
 
-        if (msg._event === 'NNet.Replay.Tracker.SHeroPickedEvent') {
-          let player = players[playerWorkingSlotID[msg.m_controllingPlayer]];
+          if (msg._event === 'NNet.Replay.Tracker.SHeroPickedEvent') {
+            let player = players[playerWorkingSlotID[msg.m_controllingPlayer]];
 
-          if (!('first' in match.picks)) match.picks.first = player.team;
+            if (!('first' in match.picks)) match.picks.first = player.team;
 
-          // due to swaps, player pick order isn't necessarily correct.
-          // also due to this implementation not allowing use of internal hero identifier,
-          // we have to do a little extra processing here...
-          // record actual player pick order
-          pickOrder[player.team].push({
-            hero: msg.m_hero,
-            id: msg.m_controllingPlayer,
-          });
-        } else if (msg._event === 'NNet.Replay.Tracker.SHeroSwappedEvent') {
-          // find the hero id and assign a new player id
-          const player = players[playerWorkingSlotID[msg.m_newControllingPlayer]];
-          const idx = pickOrder[player.team].findIndex(
-            (p) => p.hero === msg.m_hero
-          );
-          pickOrder[player.team][idx].id = msg.m_newControllingPlayer;
+            // due to swaps, player pick order isn't necessarily correct.
+            // also due to this implementation not allowing use of internal hero identifier,
+            // we have to do a little extra processing here...
+            // record actual player pick order
+            pickOrder[player.team].push({
+              hero: msg.m_hero,
+              id: msg.m_controllingPlayer,
+            });
+          } else if (msg._event === 'NNet.Replay.Tracker.SHeroSwappedEvent') {
+            // find the hero id and assign a new player id
+            const player =
+              players[playerWorkingSlotID[msg.m_newControllingPlayer]];
+            const idx = pickOrder[player.team].findIndex(
+              (p) => p.hero === msg.m_hero
+            );
+            pickOrder[player.team][idx].id = msg.m_newControllingPlayer;
+          }
         }
+      } catch (e) {
+        log.debug('Invalid draft data found, proceeding without draft data...');
+        pickOrder[0] = [];
+        pickOrder[1] = [];
       }
 
       // map to hero names
@@ -717,7 +724,7 @@ function processReplay(file, opts = {}) {
     var team1XPEnd;
 
     // player 11 = blue (0) team ai?, player 12 = red (0) team ai?
-    var possibleMinionXP = { '0': 0, '1': 0 };
+    var possibleMinionXP = { 0: 0, 1: 0 };
 
     log.debug('[TRACKER] Starting Event Analysis...');
 
@@ -1281,7 +1288,9 @@ function processReplay(file, opts = {}) {
           };
           eventObj.time = loopsToSeconds(eventObj.loop - match.loopGameStart);
           eventObj.player = playerIDMap[event.m_controlPlayerId];
-          eventObj.team = eventObj.player ? players[eventObj.player].team : event.m_upkeepPlayerId - 11;
+          eventObj.team = eventObj.player
+            ? players[eventObj.player].team
+            : event.m_upkeepPlayerId - 11;
 
           nukes[id] = eventObj;
         } else if (type in ReplayTypes.BraxisUnitType) {
