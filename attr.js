@@ -30,6 +30,7 @@ exports.heroAttribute = {
   Genn: 'Greymane',
   Guld: "Gul'dan",
   Hanz: 'Hanzo',
+  HOGG: 'Hogger',
   Illi: 'Illidan',
   IMPE: 'Imperius',
   Jain: 'Jaina',
