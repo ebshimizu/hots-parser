@@ -1,6 +1,6 @@
 {
   "name": "hots-parser",
-  "version": "7.53.4",
+  "version": "7.53.5",
   "description": "A node-based Heroes of the Storm match parser.",
   "main": "parser.js",
   "scripts": {
