@@ -1330,7 +1330,6 @@ function processReplay(file, opts = {}) {
             });
             match.objective.waves.push(waveObj);
           } else {
-            // TODO: wave strength score update
             let score = {
               0: braxisWaveStrength(waveUnits[0], match.version.m_build),
               1: braxisWaveStrength(waveUnits[1], match.version.m_build),
@@ -2554,7 +2553,8 @@ function braxisWaveStrength(units, build) {
       score,
       types[ReplayTypes.BraxisUnitType.ZergGuardian] * 0.3
     );
-  } else {
+  } else if (build < 75589) {
+    // skip ultralisks they're unreliable
     score = 0.1 * types[ReplayTypes.BraxisUnitType.ZergBaneling];
     score = Math.max(
       score,
@@ -2564,8 +2564,29 @@ function braxisWaveStrength(units, build) {
       score,
       0.35 * (types[ReplayTypes.BraxisUnitType.ZergGuardian] - 1)
     );
+    // 2.47.0
+  } else {
+    score = 0.1 * types[ReplayTypes.BraxisUnitType.ZergBaneling];
+    score = Math.max(
+      score,
+      0.24 * (types[ReplayTypes.BraxisUnitType.ZergHydralisk])
+    );
+    score = Math.max(
+      score,
+      0.30 * (types[ReplayTypes.BraxisUnitType.ZergGuardian])
+    );
+    // Since each team starts with 1 active Ultralisk and 2 inactive ones,
+    // I'm not sure if we should subtract 1 or 3 here,
+    // because I don't know if the inactive ones are being counted
+    // for the starting group of Zergs or not.
+    // Due to this, I'll choose 3 because it won't break the code if wrong,
+    // but only cause Ultralisks to be ignored for the calculations.
+    // Only change it to 1 if you are 100% sure it will work!
+    score = Math.max(
+      score,
+      0.45 * (types[ReplayTypes.BraxisUnitType.ZergUltralisk] - 3)
+    );
   }
-  // skip ultralisks they're unreliable
 
   return score;
 }
