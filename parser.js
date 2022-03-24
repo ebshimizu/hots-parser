@@ -1761,7 +1761,7 @@ function processReplay(file, opts = {}) {
                     1: braxisWaveStrength(waveUnits[1], match.version.m_build),
                   };
                 }
-                match.objective.waves[waveID].startScore[1] = 1;
+                match.objective.waves[waveID].startScore[1] = 100;
               }
             }
 
@@ -1785,7 +1785,7 @@ function processReplay(file, opts = {}) {
                   };
                 }
 
-                match.objective.waves[waveID].startScore[0] = 1;
+                match.objective.waves[waveID].startScore[0] = 100;
               }
             }
             match.objective.waves[waveID].endLoop[1] = event._gameloop;
