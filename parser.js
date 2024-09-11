@@ -629,8 +629,9 @@ function processReplay(file, opts = {}) {
 
     let a = 1;
     let b = 0;
+
     // check if Blue Team has first pick
-    if (match.picks.first === 0) {
+    if (match.picks && match.picks.first === 0) {
       [a, b] = [b, a];
     }
 
