@@ -639,8 +639,15 @@ function processReplay(file, opts = {}) {
 
     selections.push(match.bans[a][0]);
     selections.push(match.bans[b][0]);
-    selections.push(match.bans[a][1]);
-    selections.push(match.bans[b][1]);
+
+    // check if the game is from before the second early ban was added
+    if (match.version.m_build < 66292) {
+      selections.push("N/A");
+      selections.push("N/A");
+    } else {
+      selections.push(match.bans[a][1]);
+      selections.push(match.bans[b][1]);
+    }
 
     selections.push(match.picks[a][0]);
     selections.push(match.picks[b][0]);
@@ -648,8 +655,14 @@ function processReplay(file, opts = {}) {
     selections.push(match.picks[a][1]);
     selections.push(match.picks[a][2]);
 
-    selections.push(match.bans[b][2]);
-    selections.push(match.bans[a][2]);
+    // check if the game is from before the second early ban was added
+    if (match.version.m_build < 66292) {
+      selections.push(match.bans[b][1]);
+      selections.push(match.bans[a][1]);
+    } else {
+      selections.push(match.bans[b][2]);
+      selections.push(match.bans[a][2]);
+    }
 
     selections.push(match.picks[b][2]);
     selections.push(match.picks[b][3]);
