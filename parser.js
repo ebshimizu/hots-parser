@@ -624,52 +624,52 @@ function processReplay(file, opts = {}) {
         console.log(`Error processing draft data: ${e}`);
       }
 
+      let a = 1;
+      let b = 0;
+
+      // check if Blue Team has first pick
+      if (match.picks && match.picks.first === 0) {
+        [a, b] = [b, a];
+      }
+
+      // create a list of bans and picks in draft order
+      let selections = [];
+
+      selections.push(match.bans[a][0]);
+      selections.push(match.bans[b][0]);
+
+      // check if the game is from before the second early ban was added
+      if (match.version.m_build < 66292) {
+        selections.push("N/A");
+        selections.push("N/A");
+      } else {
+        selections.push(match.bans[a][1]);
+        selections.push(match.bans[b][1]);
+      }
+
+      selections.push(match.picks[a][0]);
+      selections.push(match.picks[b][0]);
+      selections.push(match.picks[b][1]);
+      selections.push(match.picks[a][1]);
+      selections.push(match.picks[a][2]);
+
+      // check if the game is from before the second early ban was added
+      if (match.version.m_build < 66292) {
+        selections.push(match.bans[b][1]);
+        selections.push(match.bans[a][1]);
+      } else {
+        selections.push(match.bans[b][2]);
+        selections.push(match.bans[a][2]);
+      }
+
+      selections.push(match.picks[b][2]);
+      selections.push(match.picks[b][3]);
+      selections.push(match.picks[a][3]);
+      selections.push(match.picks[a][4]);
+      selections.push(match.picks[b][4]);
+
       log.debug('Draft data complete');
     }
-
-    let a = 1;
-    let b = 0;
-
-    // check if Blue Team has first pick
-    if (match.picks && match.picks.first === 0) {
-      [a, b] = [b, a];
-    }
-
-    // create a list of bans and picks in draft order
-    let selections = [];
-
-    selections.push(match.bans[a][0]);
-    selections.push(match.bans[b][0]);
-
-    // check if the game is from before the second early ban was added
-    if (match.version.m_build < 66292) {
-      selections.push("N/A");
-      selections.push("N/A");
-    } else {
-      selections.push(match.bans[a][1]);
-      selections.push(match.bans[b][1]);
-    }
-
-    selections.push(match.picks[a][0]);
-    selections.push(match.picks[b][0]);
-    selections.push(match.picks[b][1]);
-    selections.push(match.picks[a][1]);
-    selections.push(match.picks[a][2]);
-
-    // check if the game is from before the second early ban was added
-    if (match.version.m_build < 66292) {
-      selections.push(match.bans[b][1]);
-      selections.push(match.bans[a][1]);
-    } else {
-      selections.push(match.bans[b][2]);
-      selections.push(match.bans[a][2]);
-    }
-
-    selections.push(match.picks[b][2]);
-    selections.push(match.picks[b][3]);
-    selections.push(match.picks[a][3]);
-    selections.push(match.picks[a][4]);
-    selections.push(match.picks[b][4]);
 
     // get the slot number for each hero
     for (const [id, player] of Object.entries(players)) {
