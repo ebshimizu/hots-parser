@@ -668,12 +668,12 @@ function processReplay(file, opts = {}) {
       selections.push(match.picks[a][4]);
       selections.push(match.picks[b][4]);
 
-      log.debug('Draft data complete');
-    }
+      // get the slot number for each hero
+      for (const [id, player] of Object.entries(players)) {
+        player.turn = selections.indexOf(player.hero);
+      }
 
-    // get the slot number for each hero
-    for (const [id, player] of Object.entries(players)) {
-      player.turn = selections.indexOf(player.hero);
+      log.debug('Draft data complete');
     }
 
     // the tracker events have most of the useful data
