@@ -29,7 +29,7 @@
   "homepage": "https://github.com/ebshimizu/hots-parser#readme",
   "devDependencies": {
     "chai": "^4.1.2",
-    "mocha": "^5.2.0"
+    "mocha": "^10.2.0"
   },
   "dependencies": {
     "heroprotocol": "GaryIrick/heroprotocol",
