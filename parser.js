@@ -110,7 +110,7 @@ function parse(file, requestedData, opts) {
   // battletags
   replay.tags = {};
   if (replay[ReplayDataType.lobby]) {
-    replay.tags = getBattletags(replay[ReplayDataType.lobby]);
+    replay.tags = getBattletags(replay[ReplayDataType.lobby], replay.details.m_playerList);
   }
 
   return replay;
@@ -194,19 +194,32 @@ function getHeader(file) {
   }
 }
 
-function getBattletags(buffer) {
+function getBattletags(buffer, playerList) {
   if (buffer) {
     let btagRegExp = XRegExp('(\\p{L}|\\d){3,24}#\\d{4,10}[zØ]?', 'g');
     let matches = buffer.toString().match(btagRegExp);
 
     // process
     let tagMap = [];
+    let i = 0;
     for (let match of matches) {
       // split into name + tag
-      let name = match.substr(0, match.indexOf('#'));
-      let tag = match.substr(match.indexOf('#') + 1);
-      tagMap.push({ tag, name, full: match });
-      log.trace('Found BattleTag: ' + match);
+      const name = match.substr(0, match.indexOf('#'));
+      const tag = match.substr(match.indexOf('#') + 1);
+
+      if (playerList[i] && playerList[i].m_name === name) {
+        const ToonHandle =
+          playerList[i].m_toon.m_region +
+          '-' +
+          playerList[i].m_toon.m_programId +
+          '-' +
+          playerList[i].m_toon.m_realm +
+          '-' +
+          playerList[i].m_toon.m_id;
+        tagMap.push({ tag, name, full: match, ToonHandle });
+        log.trace('Found BattleTag: ' + match);
+        i++;
+      }
     }
 
     return tagMap;
@@ -346,19 +359,6 @@ function processReplay(file, opts = {}) {
       pdoc.region = pdata.m_toon.m_region;
       pdoc.realm = pdata.m_toon.m_realm;
 
-      // ok so actually search forward here and look for a name match
-      for (let j = i; j < data.tags.length; j++) {
-        if (data.tags[j].name === pdoc.name) {
-          pdoc.tag = parseInt(data.tags[j].tag);
-        }
-      }
-
-      // match region should be logged too, since all players should be
-      // in the same region, overwrite constantly
-      match.region = pdata.m_toon.m_region;
-
-      pdoc.team = pdata.m_teamId; /// the team id doesn't neatly match up with the tracker events, may adjust later
-
       pdoc.ToonHandle =
         pdata.m_toon.m_region +
         '-' +
@@ -367,6 +367,20 @@ function processReplay(file, opts = {}) {
         pdata.m_toon.m_realm +
         '-' +
         pdata.m_toon.m_id;
+
+      // ok so actually search forward here and look for a name match
+      for (let j = i; j < data.tags.length; j++) {
+        if (pdoc.ToonHandle === data.tags[j].ToonHandle) {
+          pdoc.tag = parseInt(data.tags[j].tag);
+          break;
+        }
+      }
+
+      // match region should be logged too, since all players should be
+      // in the same region, overwrite constantly
+      match.region = pdata.m_toon.m_region;
+
+      pdoc.team = pdata.m_teamId; /// the team id doesn't neatly match up with the tracker events, may adjust later
 
       // DEBUG
       //if (pdata.m_toon.m_realm === 0) {
@@ -2116,8 +2130,8 @@ function processReplay(file, opts = {}) {
 
     // get a few more bits of summary data from the players...
     match.teams = {
-      0: { ids: [], names: [], heroes: [] },
-      1: { ids: [], names: [], heroes: [] },
+      0: { ids: [], names: [], heroes: [], tags: [] },
+      1: { ids: [], names: [], heroes: [], tags: [] },
     };
     match.teams[0].takedowns = match.team0Takedowns;
     match.teams[1].takedowns = match.team1Takedowns;
@@ -2155,6 +2169,7 @@ function processReplay(file, opts = {}) {
         match.teams[0].level = players[p].gameStats.Level;
         match.teams[0].heroes.push(players[p].hero);
         match.teams[0].names.push(players[p].name);
+        match.teams[0].tags.push(players[p].tag);
         match.teams[0].ids.push(p);
 
         if (players[p].win) {
@@ -2167,6 +2182,7 @@ function processReplay(file, opts = {}) {
         match.teams[1].level = players[p].gameStats.Level;
         match.teams[1].heroes.push(players[p].hero);
         match.teams[1].names.push(players[p].name);
+        match.teams[1].tags.push(players[p].tag);
         match.teams[1].ids.push(p);
 
         if (players[p].win) {
