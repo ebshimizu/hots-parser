@@ -29,8 +29,19 @@ describe('parser.js', function () {
         this.towers = JSON.parse(JSON.stringify(parsed)); // convert nodejs object to JSON.
         expect(this.towers).to.include({"status": 1});
     });
+    it('parse lost-cavern.StormReplay', function () {
+        let parsed = parser.processReplay('test/replays/lost-cavern.StormReplay');
+        this.cavern = JSON.parse(JSON.stringify(parsed))
+        expect(this.cavern).to.include({"status": 1})
+    });
     it('validate parser against json', function () {
          expect(this.towers).to.deep.equal(this.knowngood);
+    });
+    it('check isARAM and isBrawl helpers', function () {
+        expect(parser.isARAM(this.cavern.match)).to.be.true;
+        expect(parser.isBrawl(this.cavern.match)).to.be.false;
+        expect(parser.isARAM(this.towers.match)).to.be.false;
+        expect(parser.isBrawl(this.towers.match)).to.be.false;
     });
 
 });
