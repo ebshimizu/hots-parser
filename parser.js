@@ -286,12 +286,6 @@ function processReplay(file, opts = {}) {
 
     if (match.mode === null) match.mode = -1;
 
-    // check for supported mode
-    if (match.mode === ReplayTypes.GameMode.Brawl) {
-      log.warn('Brawls are not supported!');
-      return { status: ReplayStatus.Unsupported };
-    }
-
     // map details
     // for localization reasons we need the internal map name from the EndOfGameTalentChoices event
     var tracker = data.trackerevents;
@@ -313,6 +307,12 @@ function processReplay(file, opts = {}) {
           }
         }
       }
+    }
+
+    // check for supported mode: non-ARAM Brawls remain unsupported
+    if (ReplayTypes.isBrawl(match)) {
+      log.warn('Brawls are not supported!');
+      return { status: ReplayStatus.Unsupported };
     }
     // match.map = details.m_title;
 
@@ -774,6 +774,8 @@ function processReplay(file, opts = {}) {
       // As of 2.37 this refers to new Hanamura Temple
       // lists payload sequences in order (each object in the array is one payload spawn and completion)
       match.objective = { events: [] };
+    } else if (ReplayTypes.ARAMMaps.includes(match.map)) {
+      match.objective = { type: match.map, events: [] };
     } else if (match.map === undefined) {
       log.error('Map name not found. Replay too old?');
       return { status: ReplayStatus.TooOld };
@@ -3353,6 +3355,9 @@ exports.getFirstFortTeam = getFirstFortTeam;
 exports.getFirstKeepTeam = getFirstKeepTeam;
 exports.VERSION = PARSER_VERSION;
 exports.MAX_SUPPORTED_BUILD = MAX_SUPPORTED_BUILD;
+exports.isARAM = ReplayTypes.isARAM;
+exports.isBrawl = ReplayTypes.isBrawl;
+exports.ARAMMaps = ReplayTypes.ARAMMaps;
 
 log.info(
   { versions: { parser: PARSER_VERSION } },

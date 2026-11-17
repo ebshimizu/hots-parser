@@ -176,8 +176,32 @@ const MapType = {
   'Warhead Junction': 'Warhead Junction',   // blizz why
   BraxisHoldout: 'Braxis Holdout',
   Hanamura: 'Hanamura Temple',
-  AlteracPass: 'Alterac Pass'
+  AlteracPass: 'Alterac Pass',
+  LostCavern: 'Lost Cavern',
+  SilverCity: 'Silver City',
+  BraxisOutpost: 'Braxis Outpost',
+  IndustrialDistrict: 'Industrial District'
 };
+
+const ARAMMaps = [
+  MapType.LostCavern,
+  MapType.SilverCity,
+  MapType.BraxisOutpost,
+  MapType.IndustrialDistrict
+];
+
+// Official patch 2.52.0 launch date when Heroes Brawl was replaced with ARAM
+const ARAM_TRANSITION_DATE = new Date('2020-09-08T00:00:00Z');
+
+function isARAM(match) {
+  if (!match) return false;
+  return match.mode === GameMode.ARAM && ARAMMaps.includes(match.map);
+}
+
+function isBrawl(match) {
+  if (!match || match.mode !== GameMode.Brawl) return false;
+  return !ARAMMaps.includes(match.map);
+}
 
 const MessageType = {
   Chat: 0,
@@ -318,6 +342,7 @@ const GameMode = {
   Practice: 50041,
   QuickMatch: 50001,
   Brawl: 50031,
+  ARAM: 50031,
   UnrankedDraft: 50051,
   HeroLeague: 50061,
   TeamLeague: 50071,
@@ -445,3 +470,7 @@ exports.MercUnitType = MercUnitType;
 exports.StructureStrings = StructureStrings
 exports.MercUnitString = MercUnitString;
 exports.SeasonDates = SeasonDates;
+exports.ARAMMaps = ARAMMaps;
+exports.ARAM_TRANSITION_DATE = ARAM_TRANSITION_DATE;
+exports.isARAM = isARAM;
+exports.isBrawl = isBrawl;
