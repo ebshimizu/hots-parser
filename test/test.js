@@ -16,9 +16,9 @@ const readJSON = (path, cb) => {
 
 
 describe('parser.js', function () {
-    it('load parser version 6', function () {
+    it('load parser version 7', function () {
         let result = parser.VERSION;
-        expect(result).to.be.equal(6);
+        expect(result).to.be.equal(7);
     });
     it('load towers-of-doom.json', function() {
         this.knowngood = JSON.parse(fs.readFileSync(__dirname + '/json/towers-of-doom.json'));
