@@ -1,4 +1,12 @@
 const PARSER_VERSION = 7;
+
+// Polyfill Buffer.concat to allow `new Buffer.concat(...)` as called by legacy empeeku MPQ extractor
+if (typeof Buffer !== 'undefined' && Buffer.concat) {
+  const origConcat = Buffer.concat;
+  Buffer.concat = function (...args) {
+    return origConcat.apply(Buffer, args);
+  };
+}
 const log = require('./pino.js');
 const fs = require('fs');
 const path = require('path');
@@ -3189,6 +3197,12 @@ function getFirstObjectiveTeam(match) {
         ? 0
         : 1;
     } else if (match.map === ReplayTypes.MapType.HauntedWoods) {
+      if (
+        (!match.objective[0]?.units || match.objective[0].units.length === 0) &&
+        (!match.objective[1]?.units || match.objective[1].units.length === 0)
+      )
+        return null;
+
       // check id of first terror
       // shutouts
       if (
@@ -3337,7 +3351,7 @@ function getFirstObjectiveTeam(match) {
 
     return null;
   } catch (err) {
-    log.error({ error: err });
+    log.debug({ error: err }, 'Could not determine first objective team');
     return null;
   }
 }
