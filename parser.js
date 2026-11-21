@@ -1,4 +1,12 @@
 const PARSER_VERSION = 7;
+
+// Polyfill Buffer.concat to allow `new Buffer.concat(...)` as called by legacy empeeku MPQ extractor
+if (typeof Buffer !== 'undefined' && Buffer.concat) {
+  const origConcat = Buffer.concat;
+  Buffer.concat = function (...args) {
+    return origConcat.apply(Buffer, args);
+  };
+}
 const log = require('./pino.js');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +19,7 @@ const attrs = require('./attr.js');
 // log.level = 'trace';
 
 // 2.55.2.87306
-const MAX_SUPPORTED_BUILD = 87774;
+const MAX_SUPPORTED_BUILD = 98348;
 
 const BSTEP_FRAME_THRESHOLD = 8;
 
@@ -286,12 +294,6 @@ function processReplay(file, opts = {}) {
 
     if (match.mode === null) match.mode = -1;
 
-    // check for supported mode
-    if (match.mode === ReplayTypes.GameMode.Brawl) {
-      log.warn('Brawls are not supported!');
-      return { status: ReplayStatus.Unsupported };
-    }
-
     // map details
     // for localization reasons we need the internal map name from the EndOfGameTalentChoices event
     var tracker = data.trackerevents;
@@ -313,6 +315,12 @@ function processReplay(file, opts = {}) {
           }
         }
       }
+    }
+
+    // check for supported mode: non-ARAM Brawls remain unsupported
+    if (ReplayTypes.isBrawl(match)) {
+      log.warn('Brawls are not supported!');
+      return { status: ReplayStatus.Unsupported };
     }
     // match.map = details.m_title;
 
@@ -774,6 +782,8 @@ function processReplay(file, opts = {}) {
       // As of 2.37 this refers to new Hanamura Temple
       // lists payload sequences in order (each object in the array is one payload spawn and completion)
       match.objective = { events: [] };
+    } else if (ReplayTypes.ARAMMaps.includes(match.map)) {
+      match.objective = { type: match.map, events: [] };
     } else if (match.map === undefined) {
       log.error('Map name not found. Replay too old?');
       return { status: ReplayStatus.TooOld };
@@ -1644,6 +1654,8 @@ function processReplay(file, opts = {}) {
               event._gameloop - match.loopGameStart
             );
             currentLife.duration = currentLife.died - currentLife.born;
+            currentLife.killerPlayerId = event.m_killerPlayerId;
+            currentLife.killerLoop = event._gameloop;
             currentLife.locations.push({
               x: event.m_x,
               y: event.m_y,
@@ -2391,6 +2403,43 @@ function processReplay(file, opts = {}) {
     }
 
     log.debug('[STATS] Team stat collection complete');
+
+    // Correlate takedowns with exact killer from hero unit died events
+    if (Array.isArray(match.takedowns)) {
+      for (const td of match.takedowns) {
+        const victimPlayer = players[td.victim.player];
+        if (!victimPlayer || !victimPlayer.units) continue;
+
+        let matchedKillerPlayerId = null;
+        for (const unit of Object.values(victimPlayer.units)) {
+          const matchLife = unit.lives.findLast
+            ? unit.lives.findLast(
+                (l) => l.killerLoop && Math.abs(l.killerLoop - td.loop) <= 16
+              )
+            : unit.lives
+                .slice()
+                .reverse()
+                .find(
+                  (l) => l.killerLoop && Math.abs(l.killerLoop - td.loop) <= 16
+                );
+
+          if (matchLife) {
+            matchedKillerPlayerId = matchLife.killerPlayerId;
+            break;
+          }
+        }
+
+        if (matchedKillerPlayerId !== null && matchedKillerPlayerId in playerIDMap) {
+          const kHandle = playerIDMap[matchedKillerPlayerId];
+          td.victim.killedBy = {
+            player: kHandle,
+            hero: players[kHandle].hero,
+          };
+        } else if (td.killers && td.killers.length > 0) {
+          td.victim.killedBy = td.killers[0];
+        }
+      }
+    }
 
     log.debug('[STATS] Setting Match Flags...');
 
@@ -3148,6 +3197,12 @@ function getFirstObjectiveTeam(match) {
         ? 0
         : 1;
     } else if (match.map === ReplayTypes.MapType.HauntedWoods) {
+      if (
+        (!match.objective[0]?.units || match.objective[0].units.length === 0) &&
+        (!match.objective[1]?.units || match.objective[1].units.length === 0)
+      )
+        return null;
+
       // check id of first terror
       // shutouts
       if (
@@ -3296,7 +3351,7 @@ function getFirstObjectiveTeam(match) {
 
     return null;
   } catch (err) {
-    log.error({ error: err });
+    log.debug({ error: err }, 'Could not determine first objective team');
     return null;
   }
 }
@@ -3353,6 +3408,9 @@ exports.getFirstFortTeam = getFirstFortTeam;
 exports.getFirstKeepTeam = getFirstKeepTeam;
 exports.VERSION = PARSER_VERSION;
 exports.MAX_SUPPORTED_BUILD = MAX_SUPPORTED_BUILD;
+exports.isARAM = ReplayTypes.isARAM;
+exports.isBrawl = ReplayTypes.isBrawl;
+exports.ARAMMaps = ReplayTypes.ARAMMaps;
 
 log.info(
   { versions: { parser: PARSER_VERSION } },

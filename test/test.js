@@ -16,9 +16,9 @@ const readJSON = (path, cb) => {
 
 
 describe('parser.js', function () {
-    it('load parser version 6', function () {
+    it('load parser version 7', function () {
         let result = parser.VERSION;
-        expect(result).to.be.equal(6);
+        expect(result).to.be.equal(7);
     });
     it('load towers-of-doom.json', function() {
         this.knowngood = JSON.parse(fs.readFileSync(__dirname + '/json/towers-of-doom.json'));
@@ -29,8 +29,25 @@ describe('parser.js', function () {
         this.towers = JSON.parse(JSON.stringify(parsed)); // convert nodejs object to JSON.
         expect(this.towers).to.include({"status": 1});
     });
+    it('parse lost-cavern.StormReplay', function () {
+        let parsed = parser.processReplay('test/replays/lost-cavern.StormReplay');
+        this.cavern = JSON.parse(JSON.stringify(parsed))
+        expect(this.cavern).to.include({"status": 1})
+    });
     it('validate parser against json', function () {
          expect(this.towers).to.deep.equal(this.knowngood);
+    });
+    it('check isARAM and isBrawl helpers', function () {
+        expect(parser.isARAM(this.cavern.match)).to.be.true;
+        expect(parser.isBrawl(this.cavern.match)).to.be.false;
+        expect(parser.isARAM(this.towers.match)).to.be.false;
+        expect(parser.isBrawl(this.towers.match)).to.be.false;
+    });
+    it('verify victim.killedBy on takedowns', function () {
+        expect(this.towers.match.takedowns[0].victim.killedBy).to.be.an('object');
+        expect(this.towers.match.takedowns[0].victim.killedBy.player).to.be.a('string');
+        expect(this.towers.match.takedowns[0].victim.killedBy.hero).to.be.a('string');
+        expect(this.cavern.match.takedowns[0].victim.killedBy).to.be.an('object');
     });
 
 });
