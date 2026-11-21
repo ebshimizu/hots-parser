@@ -1646,6 +1646,8 @@ function processReplay(file, opts = {}) {
               event._gameloop - match.loopGameStart
             );
             currentLife.duration = currentLife.died - currentLife.born;
+            currentLife.killerPlayerId = event.m_killerPlayerId;
+            currentLife.killerLoop = event._gameloop;
             currentLife.locations.push({
               x: event.m_x,
               y: event.m_y,
@@ -2393,6 +2395,43 @@ function processReplay(file, opts = {}) {
     }
 
     log.debug('[STATS] Team stat collection complete');
+
+    // Correlate takedowns with exact killer from hero unit died events
+    if (Array.isArray(match.takedowns)) {
+      for (const td of match.takedowns) {
+        const victimPlayer = players[td.victim.player];
+        if (!victimPlayer || !victimPlayer.units) continue;
+
+        let matchedKillerPlayerId = null;
+        for (const unit of Object.values(victimPlayer.units)) {
+          const matchLife = unit.lives.findLast
+            ? unit.lives.findLast(
+                (l) => l.killerLoop && Math.abs(l.killerLoop - td.loop) <= 16
+              )
+            : unit.lives
+                .slice()
+                .reverse()
+                .find(
+                  (l) => l.killerLoop && Math.abs(l.killerLoop - td.loop) <= 16
+                );
+
+          if (matchLife) {
+            matchedKillerPlayerId = matchLife.killerPlayerId;
+            break;
+          }
+        }
+
+        if (matchedKillerPlayerId !== null && matchedKillerPlayerId in playerIDMap) {
+          const kHandle = playerIDMap[matchedKillerPlayerId];
+          td.victim.killedBy = {
+            player: kHandle,
+            hero: players[kHandle].hero,
+          };
+        } else if (td.killers && td.killers.length > 0) {
+          td.victim.killedBy = td.killers[0];
+        }
+      }
+    }
 
     log.debug('[STATS] Setting Match Flags...');
 

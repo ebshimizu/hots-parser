@@ -43,5 +43,11 @@ describe('parser.js', function () {
         expect(parser.isARAM(this.towers.match)).to.be.false;
         expect(parser.isBrawl(this.towers.match)).to.be.false;
     });
+    it('verify victim.killedBy on takedowns', function () {
+        expect(this.towers.match.takedowns[0].victim.killedBy).to.be.an('object');
+        expect(this.towers.match.takedowns[0].victim.killedBy.player).to.be.a('string');
+        expect(this.towers.match.takedowns[0].victim.killedBy.hero).to.be.a('string');
+        expect(this.cavern.match.takedowns[0].victim.killedBy).to.be.an('object');
+    });
 
 });
